@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart College Placement Management System (SCPMS)</title>
+    <meta name="description" content="Centralized academic placement portal connecting students, coordinators, and recruiting companies with automated eligibility verification.">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand">
+                <div class="brand-icon">🎓</div>
+                <span>SCPMS</span>
+                <span class="brand-badge">B.Tech CSE</span>
+            </a>
+
+            <div class="nav-menu">
+                <a href="#drives" class="nav-link">Active Drives</a>
+                <a href="#features" class="nav-link">System Architecture</a>
+                <a href="#demo" class="nav-link">Demo Accounts</a>
+            </div>
+
+            <div class="nav-user" style="display:flex; align-items:center; gap:0.75rem;">
+                <button class="theme-toggle-btn" onclick="ThemeManager.toggle()" title="Toggle Dark/Light Mode">🌙</button>
+                <div id="navbar-user-info">
+                    <button class="btn btn-primary" onclick="openModal('login-modal')">
+                        🔐 Sign In
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-pill">
+            🚀 Powered by MySQL 8.0 & Express.js Relational Engine
+        </div>
+        <h1 class="hero-title">
+            Smart College <span class="gradient-text">Placement Management</span> System
+        </h1>
+        <p class="hero-desc">
+            A centralized, enterprise-grade academic placement automation platform that streamlines student applications, evaluates eligibility criteria in real-time, and coordinates hiring rounds with full relational integrity.
+        </p>
+
+        <div class="hero-actions">
+            <button class="btn btn-primary btn-lg" onclick="openModal('login-modal')">
+                🚀 Launch Placement Portal
+            </button>
+            <a href="#demo" class="btn btn-secondary btn-lg">
+                👥 Explore Demo Roles
+            </a>
+        </div>
+
+        <!-- Live Metrics Counter Bar -->
+        <div class="main-wrapper" style="padding-top:0; padding-bottom:1rem;">
+            <div class="stats-grid" id="hero-stats">
+                <div class="stat-card">
+                    <div class="stat-icon indigo">👨‍🎓</div>
+                    <div>
+                        <div class="stat-value" id="stat-students">10+</div>
+                        <div class="stat-label">Enrolled Students</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon emerald">🏢</div>
+                    <div>
+                        <div class="stat-value" id="stat-companies">4+</div>
+                        <div class="stat-label">Recruiting Partners</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon amber">💼</div>
+                    <div>
+                        <div class="stat-value" id="stat-drives">3</div>
+                        <div class="stat-label">Active Drives</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon cyan">💰</div>
+                    <div>
+                        <div class="stat-value" id="stat-package">18.5 LPA</div>
+                        <div class="stat-label">Highest Package</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- One-Click Demo Role Switcher -->
+        <div class="demo-box" id="demo">
+            <div class="demo-title">
+                <span>🔑 One-Click Demo Accounts (Pre-configured with Bcrypt)</span>
+                <span style="font-size:0.8rem; font-weight:500; color:var(--neutral-500);">Click any role card to sign in instantly</span>
+            </div>
+            <div class="demo-grid">
+                <div class="demo-card" onclick="Auth.fillDemo('admin@college.edu', 'Admin@123')">
+                    <div class="demo-role">Placement Admin</div>
+                    <div class="demo-name">Dr. Rajesh Sharma</div>
+                    <div class="demo-creds">admin@college.edu • Admin@123</div>
+                </div>
+
+                <div class="demo-card" onclick="Auth.fillDemo('aarav.patel@college.edu', 'Student@123')">
+                    <div class="demo-role">Student (Eligible / High CGPA)</div>
+                    <div class="demo-name">Aarav Patel (CSE)</div>
+                    <div class="demo-creds">aarav.patel@college.edu • Student@123</div>
+                </div>
+
+                <div class="demo-card" onclick="Auth.fillDemo('diya.sharma@college.edu', 'Student@123')">
+                    <div class="demo-role">Student (Shortlisted Candidate)</div>
+                    <div class="demo-name">Diya Sharma (ECE)</div>
+                    <div class="demo-creds">diya.sharma@college.edu • Student@123</div>
+                </div>
+
+                <div class="demo-card" onclick="Auth.fillDemo('vikram.malhotra@college.edu', 'Student@123')">
+                    <div class="demo-role">Student (With 1 Backlog)</div>
+                    <div class="demo-name">Vikram Malhotra (CSE)</div>
+                    <div class="demo-creds">vikram.malhotra@college.edu • Student@123</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content: Featured Placement Drives -->
+    <main class="main-wrapper" id="drives">
+        <div class="page-header">
+            <div>
+                <h2 class="page-title">Live & Upcoming Placement Drives</h2>
+                <p class="page-subtitle">Current opportunities available for registered campus candidates</p>
+            </div>
+            <button class="btn btn-primary" onclick="openModal('login-modal')">
+                View All Drives & Apply →
+            </button>
+        </div>
+
+        <div class="drives-grid" id="public-drives-container">
+            <!-- Dynamically populated via JavaScript -->
+            <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--neutral-400);">
+                Loading active placement drives...
+            </div>
+        </div>
+
+        <!-- Key System Architectural Highlights -->
+        <section style="margin-top: 4rem;" id="features">
+            <div class="page-header" style="text-align: center; justify-content: center;">
+                <div>
+                    <h2 class="page-title">Relational Engineering & Core Features</h2>
+                    <p class="page-subtitle">Built strictly on 3NF relational schema, MySQL stored procedures, and secure sessions</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="card" style="padding: 1.5rem;">
+                    <div style="font-size: 2rem; margin-bottom: 0.75rem;">🛡️</div>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Automated Eligibility Engine</h3>
+                    <p style="font-size: 0.875rem; color: var(--neutral-600);">
+                        Enforces CGPA thresholds, backlog ceilings, application deadlines, and mandatory skill prerequisites automatically via stored procedures.
+                    </p>
+                </div>
+
+                <div class="card" style="padding: 1.5rem;">
+                    <div style="font-size: 2rem; margin-bottom: 0.75rem;">⚡</div>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Bcrypt & RBAC Security</h3>
+                    <p style="font-size: 0.875rem; color: var(--neutral-600);">
+                        Passwords hashed with 10 salt rounds. State-enforced role authentication isolating Admin, Student, and Recruiter views.
+                    </p>
+                </div>
+
+                <div class="card" style="padding: 1.5rem;">
+                    <div style="font-size: 2rem; margin-bottom: 0.75rem;">📊</div>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Live Analytics & CSV Export</h3>
+                    <p style="font-size: 0.875rem; color: var(--neutral-600);">
+                        Branch-wise placement rate calculations, recruiter packages, and instant one-click CSV generation for accreditation reporting.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Login Modal Dialog -->
+    <div class="modal-overlay" id="login-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">🔐 Sign In to Placement Portal</h3>
+                <button class="modal-close" onclick="closeModal('login-modal')">&times;</button>
+            </div>
+            <form id="login-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="login-email">Registered Email Address</label>
+                        <input type="email" id="login-email" class="form-control" placeholder="e.g. admin@college.edu" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="login-password">Password</label>
+                        <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                    <div style="font-size:0.8rem; color:var(--neutral-500); margin-top:0.5rem;">
+                        💡 <strong>Viva / Demo Tip:</strong> You can click any role above or use <code>Admin@123</code> / <code>Student@123</code>.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('login-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Sign In</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="#drives">Placement Drives</a>
+            <a href="#features">Architecture</a>
+            <a href="#demo">Demo Credentials</a>
+        </div>
+        <p>© 2026 Department of Computer Science & Engineering — Smart College Placement Management System</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // Load public live metrics & featured drives on startup
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check if user is already logged in
+            const user = await Auth.checkSession();
+            if (user) {
+                const navUser = document.getElementById('navbar-user-info');
+                if (navUser) {
+                    const targetUrl = user.role === 'admin' ? '/admin.html' : '/student.html';
+                    navUser.innerHTML = `
+                        <a href="${targetUrl}" class="btn btn-primary btn-sm">
+                            Go to ${user.role === 'admin' ? 'Admin Portal' : 'Student Portal'} →
+                        </a>
+                        <button class="btn btn-secondary btn-sm" onclick="Auth.logout()">Logout</button>
+                    `;
+                }
+            }
+
+            // Load Hero Stats
+            try {
+                const statsRes = await API.get('/api/public/stats');
+                if (statsRes.success) {
+                    document.getElementById('stat-students').textContent = statsRes.data.totalStudents;
+                    document.getElementById('stat-companies').textContent = statsRes.data.activeCompanies;
+                    document.getElementById('stat-drives').textContent = statsRes.data.activeDrives;
+                    document.getElementById('stat-package').textContent = `${statsRes.data.highestPackage} LPA`;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+
+            // Load Public Drives
+            try {
+                const drivesRes = await API.get('/api/public/drives');
+                const container = document.getElementById('public-drives-container');
+                if (drivesRes.success && drivesRes.data.length > 0) {
+                    container.innerHTML = drivesRes.data.map(d => `
+                        <div class="drive-card">
+                            <div>
+                                <div class="drive-top">
+                                    <div class="drive-company">${d.company_name}</div>
+                                    <span class="badge badge-open">Open</span>
+                                </div>
+                                <h3 class="drive-role">${d.job_role}</h3>
+                                <div class="drive-package">
+                                    ${d.package_lpa} <span>LPA</span>
+                                </div>
+                                <div class="drive-criteria">
+                                    <div class="criteria-item">
+                                        <span>Min CGPA:</span>
+                                        <strong>${d.minimum_cgpa}</strong>
+                                    </div>
+                                    <div class="criteria-item">
+                                        <span>Location:</span>
+                                        <strong>${d.job_location}</strong>
+                                    </div>
+                                    <div class="criteria-item">
+                                        <span>Type:</span>
+                                        <strong>${d.employment_type}</strong>
+                                    </div>
+                                    <div class="criteria-item">
+                                        <span>Deadline:</span>
+                                        <strong>${formatDate(d.application_deadline)}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" style="width:100%;" onclick="openModal('login-modal')">
+                                Apply via Student Portal
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:2rem;">No active drives published right now.</div>`;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    </script>
+</body>
+</html>

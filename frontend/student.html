@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - Smart College Placement Management System</title>
+    <meta name="description" content="Student placement dashboard for checking eligibility, submitting drive applications, tracking interview rounds, and managing profile skills.">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/student.html" class="brand">
+                <div class="brand-icon">🎓</div>
+                <span>SCPMS</span>
+                <span class="brand-badge">Student Portal</span>
+            </a>
+
+            <div class="nav-menu">
+                <a href="/" class="nav-link">Home Portal</a>
+                <a href="#drives" class="nav-link" onclick="StudentApp.switchTab('tab-drives')">Browse Drives</a>
+                <a href="#applications" class="nav-link" onclick="StudentApp.switchTab('tab-applications')">My Applications</a>
+            </div>
+
+            <div class="nav-user" style="display:flex; align-items:center; gap:0.75rem;">
+                <button class="theme-toggle-btn" onclick="ThemeManager.toggle()" title="Toggle Dark/Light Mode">🌙</button>
+                <div id="navbar-user-info" style="display:flex; align-items:center; gap:0.75rem;"></div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Student Dashboard Container -->
+    <main class="main-wrapper">
+
+        <!-- Student Profile Overview Banner -->
+        <div class="card" style="margin-bottom: 2rem; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);">
+            <div class="card-body" style="padding: 1.75rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 1.25rem;">
+                        <div style="width: 64px; height: 64px; border-radius: var(--radius-md); background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%); color: white; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800;" id="profile-avatar">
+                            S
+                        </div>
+                        <div>
+                            <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--neutral-900);" id="student-name">
+                                Loading Student Profile...
+                            </h1>
+                            <div style="display: flex; align-items: center; gap: 0.75rem; margin-top: 0.35rem; font-size: 0.875rem; color: var(--neutral-600); flex-wrap: wrap;">
+                                <span>Roll No: <strong id="student-roll" style="color:var(--neutral-900);">--</strong></span>
+                                <span>•</span>
+                                <span>Branch: <strong id="student-branch" style="color:var(--neutral-900);">--</strong></span>
+                                <span>•</span>
+                                <span>Batch: <strong id="student-year" style="color:var(--neutral-900);">--</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <div style="background: white; border: 1px solid var(--neutral-200); border-radius: var(--radius-md); padding: 0.75rem 1.25rem; text-align: center; box-shadow: var(--card-shadow);">
+                            <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--neutral-500);">Current CGPA</div>
+                            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);" id="student-cgpa">--</div>
+                        </div>
+
+                        <div style="background: white; border: 1px solid var(--neutral-200); border-radius: var(--radius-md); padding: 0.75rem 1.25rem; text-align: center; box-shadow: var(--card-shadow);">
+                            <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--neutral-500);">Active Backlogs</div>
+                            <div style="font-size: 1.5rem; font-weight: 800;" id="student-backlogs">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="StudentApp.switchTab('tab-overview')">
+                📊 Overview & Alerts
+            </button>
+            <button class="tab-btn" onclick="StudentApp.switchTab('tab-drives')">
+                💼 Placement Drives <span class="tab-badge" id="tab-badge-drives">0</span>
+            </button>
+            <button class="tab-btn" onclick="StudentApp.switchTab('tab-applications')">
+                📝 My Applications <span class="tab-badge" id="tab-badge-apps">0</span>
+            </button>
+            <button class="tab-btn" onclick="StudentApp.switchTab('tab-skills')">
+                🛠️ Skills & Resume
+            </button>
+        </div>
+
+        <!-- TAB 1: OVERVIEW & ALERTS -->
+        <section id="tab-overview" class="tab-content active">
+            <!-- Summary Counters -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon indigo">📝</div>
+                    <div>
+                        <div class="stat-value" id="count-applied">0</div>
+                        <div class="stat-label">Total Applied</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon amber">⏳</div>
+                    <div>
+                        <div class="stat-value" id="count-shortlisted">0</div>
+                        <div class="stat-label">Shortlisted</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon cyan">🎯</div>
+                    <div>
+                        <div class="stat-value" id="count-progress">0</div>
+                        <div class="stat-label">In Progress</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon emerald">🎉</div>
+                    <div>
+                        <div class="stat-value" id="count-selected">0</div>
+                        <div class="stat-label">Offers Received</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Two Column Layout: Upcoming Interviews & Notifications -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem;">
+                <!-- Scheduled Interviews -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📅 Upcoming Interview Schedules</h3>
+                    </div>
+                    <div class="card-body" id="interviews-list-container">
+                        <div style="text-align: center; color: var(--neutral-400); padding: 2rem;">
+                            No pending interview schedules.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Feed -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🔔 Recent Alerts & Notifications</h3>
+                    </div>
+                    <div class="card-body" id="notifications-list-container">
+                        <div style="text-align: center; color: var(--neutral-400); padding: 2rem;">
+                            No notifications yet.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: PLACEMENT DRIVES -->
+        <section id="tab-drives" class="tab-content">
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-body" style="padding: 1rem 1.5rem;">
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="drive-search" class="form-control" placeholder="Search by role or company..." style="max-width: 320px;" oninput="StudentApp.filterDrives()">
+                        <select id="drive-filter-eligibility" class="form-control" style="max-width: 220px;" onchange="StudentApp.filterDrives()">
+                            <option value="all">All Available Drives</option>
+                            <option value="eligible">Only Eligible Drives</option>
+                            <option value="applied">Already Applied</option>
+                        </select>
+                        <span style="margin-left: auto; font-size: 0.85rem; color: var(--neutral-500);" id="drives-count-summary">
+                            Showing drives
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="drives-grid" id="student-drives-grid">
+                <!-- Populated dynamically via student.js -->
+            </div>
+        </section>
+
+        <!-- TAB 3: MY APPLICATIONS -->
+        <section id="tab-applications" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Submitted Applications & Interview Stages</h3>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div id="applications-table-container">
+                        <!-- Populated dynamically via student.js -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: SKILLS & PROFILE -->
+        <section id="tab-skills" class="tab-content">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem;">
+                <!-- Skills Management -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🛠️ Technical Skills Inventory</h3>
+                    </div>
+                    <div class="card-body">
+                        <p style="font-size: 0.875rem; color: var(--neutral-600); margin-bottom: 1.25rem;">
+                            Keep your technical skills updated to qualify for recruitment drives with mandatory skill criteria.
+                        </p>
+
+                        <!-- Add Skill Form -->
+                        <form id="add-skill-form" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;" onsubmit="StudentApp.handleAddSkill(event)">
+                            <select id="select-new-skill" class="form-control" style="flex: 2; min-width: 180px;" required>
+                                <option value="">Select a skill to add...</option>
+                            </select>
+                            <select id="select-skill-level" class="form-control" style="flex: 1; min-width: 140px;" required>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="beginner">Beginner</option>
+                                <option value="advanced">Advanced</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">
+                                + Add Skill
+                            </button>
+                        </form>
+
+                        <!-- Student's Current Skills Badges -->
+                        <div id="student-skills-badges" style="display: flex; flex-wrap: wrap; gap: 0.65rem;">
+                            <!-- Populated via student.js -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic & Resume Profile -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📄 Contact & Resume Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="edit-profile-form" onsubmit="StudentApp.handleUpdateProfile(event)">
+                            <div class="form-group">
+                                <label class="form-label">Contact Phone</label>
+                                <input type="tel" id="profile-phone" class="form-control" placeholder="+91 98765 43210">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Resume URL (Drive / Cloud Link)</label>
+                                <input type="url" id="profile-resume" class="form-control" placeholder="https://drive.google.com/your-resume">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Career Objective / Profile Summary</label>
+                                <textarea id="profile-summary" class="form-control" rows="4" placeholder="Brief summary of your career interests, projects, and specialties..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                Save Profile Changes
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Application Confirmation Modal -->
+    <div class="modal-overlay" id="apply-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Placement Application</h3>
+                <button class="modal-close" onclick="closeModal('apply-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.95rem; color: var(--neutral-700); margin-bottom: 1rem;">
+                    You are applying for the following placement drive:
+                </p>
+                <div style="background: var(--neutral-50); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--neutral-200); margin-bottom: 1rem;">
+                    <div style="font-size: 1.15rem; font-weight: 800; color: var(--neutral-900);" id="modal-apply-role">--</div>
+                    <div style="font-weight: 600; color: var(--neutral-600);" id="modal-apply-company">--</div>
+                    <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--neutral-500);" id="modal-apply-package">--</div>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--neutral-500);">
+                    ℹ️ By submitting, your verified academic records (CGPA, roll number, and skills) will be shared with the recruiter.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('apply-modal')">Cancel</button>
+                <button type="button" class="btn btn-success" id="btn-confirm-apply">
+                    Confirm & Apply
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: DRIVE DETAILS & REAL-TIME ELIGIBILITY CHECKLIST -->
+    <div class="modal-overlay" id="modal-drive-details">
+        <div class="modal-container large">
+            <div class="modal-header">
+                <div>
+                    <h3 class="modal-title" id="modal-detail-role">Drive Details</h3>
+                    <div style="font-size:0.85rem; color:var(--neutral-500); font-weight:600;" id="modal-detail-company">Company Name</div>
+                </div>
+                <button class="modal-close" onclick="closeModal('modal-drive-details')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; justify-content:space-between; align-items:center; background:var(--neutral-50); padding:1rem; border-radius:var(--radius-sm); border:1px solid var(--neutral-200); margin-bottom:1.5rem; flex-wrap:wrap; gap:0.75rem;">
+                    <div>
+                        <span style="font-size:0.75rem; text-transform:uppercase; color:var(--neutral-500); font-weight:700;">CTC Package</span>
+                        <div style="font-size:1.5rem; font-weight:800; color:#166534;" id="modal-detail-package">-- LPA</div>
+                    </div>
+                    <div>
+                        <span style="font-size:0.75rem; text-transform:uppercase; color:var(--neutral-500); font-weight:700;">Location & Type</span>
+                        <div style="font-weight:700; color:var(--neutral-800);" id="modal-detail-location">--</div>
+                    </div>
+                    <div>
+                        <span style="font-size:0.75rem; text-transform:uppercase; color:var(--neutral-500); font-weight:700;">Deadline</span>
+                        <div style="font-weight:700; color:var(--neutral-800);" id="modal-detail-deadline">--</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="font-size:1rem; font-weight:700; margin-bottom:0.4rem; color:var(--neutral-900);">Job Role Description</h4>
+                    <p style="font-size:0.875rem; color:var(--neutral-600); line-height:1.6;" id="modal-detail-desc">--</p>
+                </div>
+
+                <div>
+                    <h4 style="font-size:1rem; font-weight:700; margin-bottom:0.75rem; color:var(--neutral-900);">
+                        🎯 Automated Eligibility Verification Matrix
+                    </h4>
+                    <div id="modal-checklist-container">
+                        <!-- Populated dynamically: CGPA, Backlogs, Deadline, Skills -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" id="modal-detail-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('modal-drive-details')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/student.js"></script>
+</body>
+</html>

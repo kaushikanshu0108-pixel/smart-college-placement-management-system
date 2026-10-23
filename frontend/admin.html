@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Placement Admin Portal - Smart College Placement Management System</title>
+    <meta name="description" content="University placement administration console for managing recruiting companies, publishing drives, verifying student eligibility, and scheduling interview rounds.">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/admin.html" class="brand">
+                <div class="brand-icon" style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%);">🛡️</div>
+                <span>SCPMS</span>
+                <span class="brand-badge" style="background:#e0e7ff; color:#3730a3;">Placement Admin</span>
+            </a>
+
+            <div class="nav-menu">
+                <a href="/" class="nav-link">Home Portal</a>
+                <a href="#analytics" class="nav-link" onclick="AdminApp.switchTab('tab-analytics')">Analytics</a>
+                <a href="#drives" class="nav-link" onclick="AdminApp.switchTab('tab-drives')">Drives</a>
+                <a href="#applications" class="nav-link" onclick="AdminApp.switchTab('tab-applications')">Applications</a>
+                <a href="#database" class="nav-link" onclick="AdminApp.switchTab('tab-database')">🔍 DB Inspector</a>
+            </div>
+
+            <div class="nav-user" style="display:flex; align-items:center; gap:0.75rem;">
+                <button class="theme-toggle-btn" onclick="ThemeManager.toggle()" title="Toggle Dark/Light Mode">🌙</button>
+                <div id="navbar-user-info" style="display:flex; align-items:center; gap:0.75rem;"></div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Admin Container -->
+    <main class="main-wrapper">
+
+        <!-- Top Title Bar -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">University Placement Operations Console</h1>
+                <p class="page-subtitle">Centralized placement coordination, academic eligibility enforcement, and accreditation analytics</p>
+            </div>
+            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <button class="btn btn-secondary" onclick="AdminApp.openNewStudentModal()">
+                    👨‍🎓 + Register Student
+                </button>
+                <button class="btn btn-secondary" onclick="AdminApp.openNewCompanyModal()">
+                    🏢 Add Company
+                </button>
+                <button class="btn btn-primary" onclick="AdminApp.openNewDriveModal()">
+                    + New Placement Drive
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Metric Cards Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon emerald">📈</div>
+                <div>
+                    <div class="stat-value" id="kpi-placement-rate">--%</div>
+                    <div class="stat-label">Placement Rate</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon indigo">👨‍🎓</div>
+                <div>
+                    <div class="stat-value" id="kpi-total-students">--</div>
+                    <div class="stat-label">Total Students (<span id="kpi-placed-students" style="color:var(--success);">--</span> Placed)</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">💼</div>
+                <div>
+                    <div class="stat-value" id="kpi-active-drives">--</div>
+                    <div class="stat-label">Active Drives</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon cyan">🏢</div>
+                <div>
+                    <div class="stat-value" id="kpi-total-companies">--</div>
+                    <div class="stat-label">Partner Companies</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon rose">💰</div>
+                <div>
+                    <div class="stat-value" id="kpi-avg-package">-- LPA</div>
+                    <div class="stat-label">Average CTC Package</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="AdminApp.switchTab('tab-analytics')">
+                📊 Placement Analytics & Export
+            </button>
+            <button class="tab-btn" onclick="AdminApp.switchTab('tab-drives')">
+                💼 Placement Drives <span class="tab-badge" id="badge-total-drives">0</span>
+            </button>
+            <button class="tab-btn" onclick="AdminApp.switchTab('tab-applications')">
+                📋 Candidate Pipeline <span class="tab-badge" id="badge-total-apps">0</span>
+            </button>
+            <button class="tab-btn" onclick="AdminApp.switchTab('tab-students')">
+                👥 Student Directory <span class="tab-badge" id="badge-total-students">0</span>
+            </button>
+            <button class="tab-btn" onclick="AdminApp.switchTab('tab-companies')">
+                🏢 Registered Companies
+            </button>
+            <button class="tab-btn" onclick="AdminApp.switchTab('tab-database')">
+                🔍 Database Explorer & Health
+            </button>
+        </div>
+
+        <!-- TAB 1: ANALYTICS & CSV REPORTS -->
+        <section id="tab-analytics" class="tab-content active">
+            <!-- Visual Interactive Charts Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 Placement Rate by Engineering Branch (%)</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-box">
+                            <canvas id="chart-branch-placement"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🍩 Application Conversion Pipeline</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-box">
+                            <canvas id="chart-app-status"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                <!-- Branch Performance Table -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🏛️ Branch-Wise Placement Distribution</h3>
+                    </div>
+                    <div class="card-body" style="padding: 0;">
+                        <div class="table-responsive">
+                            <table class="table" id="branch-stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>Branch</th>
+                                        <th>Enrolled</th>
+                                        <th>Placed</th>
+                                        <th>Placement %</th>
+                                        <th>Avg CGPA</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via admin.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instant CSV & JSON Export Panel -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📥 Accreditation Reports (CSV & JSON)</h3>
+                    </div>
+                    <div class="card-body">
+                        <p style="font-size: 0.85rem; color: var(--neutral-600); margin-bottom: 1.25rem;">
+                            Directly generate and export clean, formatted CSV datasets for university audit and NAAC/NIRF reporting:
+                        </p>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <a href="/api/admin/reports/csv?type=placed" class="btn btn-secondary" style="justify-content: flex-start; text-align: left;">
+                                📄 Placed Students Official List (CSV)
+                            </a>
+                            <a href="/api/admin/reports/csv?type=drives" class="btn btn-secondary" style="justify-content: flex-start; text-align: left;">
+                                📊 Placement Drives Audit Report (CSV)
+                            </a>
+                            <a href="/api/admin/reports/csv?type=branches" class="btn btn-secondary" style="justify-content: flex-start; text-align: left;">
+                                🏛️ Branch-wise Analytics Dataset (CSV)
+                            </a>
+                            <a href="/api/admin/reports/json?type=placed" class="btn btn-secondary" style="justify-content: flex-start; text-align: left;">
+                                💾 Placed Students (JSON Dataset)
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: PLACEMENT DRIVES -->
+        <section id="tab-drives" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Active & Scheduled Placement Drives</h3>
+                    <button class="btn btn-primary btn-sm" onclick="AdminApp.openNewDriveModal()">
+                        + Create Placement Drive
+                    </button>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-responsive">
+                        <table class="table" id="admin-drives-table">
+                            <thead>
+                                <tr>
+                                    <th>Drive & Role</th>
+                                    <th>Recruiter</th>
+                                    <th>Package</th>
+                                    <th>Criteria (CGPA / Backlogs)</th>
+                                    <th>Deadline</th>
+                                    <th>Applicants</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: CANDIDATE PIPELINE & APPLICATIONS -->
+        <section id="tab-applications" class="tab-content">
+            <!-- Filter Bar -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-body" style="padding: 1rem 1.5rem;">
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        <select id="filter-app-drive" class="form-control" style="max-width: 320px;" onchange="AdminApp.loadApplications()">
+                            <option value="">All Placement Drives</option>
+                        </select>
+                        <select id="filter-app-status" class="form-control" style="max-width: 200px;" onchange="AdminApp.loadApplications()">
+                            <option value="">All Application Statuses</option>
+                            <option value="applied">Applied</option>
+                            <option value="shortlisted">Shortlisted</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="selected">Selected</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Student Job Applications & Interview Rounds</h3>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-responsive">
+                        <table class="table" id="admin-apps-table">
+                            <thead>
+                                <tr>
+                                    <th>Student Name & Roll No</th>
+                                    <th>Academic Standing</th>
+                                    <th>Applied Drive & Package</th>
+                                    <th>Status</th>
+                                    <th>Date Applied</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: STUDENT DIRECTORY -->
+        <section id="tab-students" class="tab-content">
+            <!-- Filter Bar -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-body" style="padding: 1rem 1.5rem;">
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="filter-stud-search" class="form-control" placeholder="Search name, roll number, email..." style="max-width: 280px;" oninput="AdminApp.loadStudents()">
+                        <select id="filter-stud-branch" class="form-control" style="max-width: 180px;" onchange="AdminApp.loadStudents()">
+                            <option value="">All Branches</option>
+                            <option value="Computer Science & Engineering">CSE</option>
+                            <option value="Information Technology">IT</option>
+                            <option value="Electronics & Communication">ECE</option>
+                            <option value="Mechanical Engineering">MECH</option>
+                            <option value="Civil Engineering">CIVIL</option>
+                        </select>
+                        <select id="filter-stud-status" class="form-control" style="max-width: 180px;" onchange="AdminApp.loadStudents()">
+                            <option value="">All Account Statuses</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                            <option value="suspended">Suspended</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Enrolled Students Database</h3>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-responsive">
+                        <table class="table" id="admin-students-table">
+                            <thead>
+                                <tr>
+                                    <th>Roll No</th>
+                                    <th>Student Name</th>
+                                    <th>Branch</th>
+                                    <th>CGPA</th>
+                                    <th>Backlogs</th>
+                                    <th>Placement Status</th>
+                                    <th>Account Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: REGISTERED COMPANIES -->
+        <section id="tab-companies" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Recruiting Organizations & Industry Partners</h3>
+                    <button class="btn btn-primary btn-sm" onclick="AdminApp.openNewCompanyModal()">
+                        + Register New Company
+                    </button>
+                </div>
+                <div class="card-body" style="padding: 0;">
+                    <div class="table-responsive">
+                        <table class="table" id="admin-companies-table">
+                            <thead>
+                                <tr>
+                                    <th>Company Name</th>
+                                    <th>Industry</th>
+                                    <th>Contact Person</th>
+                                    <th>Email & Phone</th>
+                                    <th>Total Drives</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 6: DATABASE EXPLORER & LIVE SCHEMA INSPECTOR -->
+        <section id="tab-database" class="tab-content">
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title">⚡ Live MySQL Engine Diagnostics</h3>
+                        <div style="font-size:0.8rem; color:var(--neutral-500); margin-top:2px;">Real-time metrics connected to active database pool</div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="AdminApp.loadDatabaseExplorer()">
+                        🔄 Refresh Diagnostics
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="stats-grid" id="db-health-grid" style="margin-bottom: 0;">
+                        <!-- Server Version, Host, Active Threads, Total Queries, Uptime -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="db-inspector-grid">
+                <!-- Left: 11 Entities Explorer -->
+                <div>
+                    <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--neutral-800); display:flex; justify-content:space-between; align-items:center;">
+                        <span>Tables in Schema (3NF)</span>
+                        <span class="badge" id="db-tables-count-badge" style="background:var(--primary-light); color:var(--primary);">11</span>
+                    </div>
+                    <div class="db-table-list" id="db-tables-list">
+                        <div style="text-align: center; color: var(--neutral-400); padding: 1.5rem;">Loading MySQL tables...</div>
+                    </div>
+                </div>
+
+                <!-- Right: Active Table Inspector & Live Sample Data -->
+                <div class="db-view-panel" id="db-table-inspector-panel">
+                    <div style="text-align: center; color: var(--neutral-400); padding: 4rem;">
+                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔍</div>
+                        <div style="font-weight: 700; color: var(--neutral-700);">Select a table on the left</div>
+                        <div style="font-size: 0.85rem; color: var(--neutral-500); margin-top: 0.25rem;">
+                            View real-time column definitions, primary/foreign key constraints, and live sample rows.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL 1: CREATE NEW PLACEMENT DRIVE -->
+    <div class="modal-overlay" id="modal-new-drive">
+        <div class="modal-container large">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Campus Placement Drive</h3>
+                <button class="modal-close" onclick="closeModal('modal-new-drive')">&times;</button>
+            </div>
+            <form id="form-new-drive" onsubmit="AdminApp.handleCreateDrive(event)">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Recruiting Company *</label>
+                            <select id="drive-company-id" class="form-control" required>
+                                <option value="">Select company...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Drive Title *</label>
+                            <input type="text" id="drive-title-input" class="form-control" placeholder="e.g. Google Cloud Campus Recruitment 2026" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Job Role *</label>
+                            <input type="text" id="drive-role-input" class="form-control" placeholder="e.g. Associate Cloud Engineer" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Employment Type *</label>
+                            <select id="drive-type-input" class="form-control" required>
+                                <option value="Full-Time">Full-Time</option>
+                                <option value="Internship">Internship</option>
+                                <option value="Intern + PPO">Intern + PPO</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">CTC Package (LPA) *</label>
+                            <input type="number" step="0.01" id="drive-pkg-input" class="form-control" placeholder="e.g. 14.50" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Job Location</label>
+                            <input type="text" id="drive-loc-input" class="form-control" placeholder="e.g. Bengaluru / Hyderabad / Remote" value="Bengaluru / Remote">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Minimum CGPA Required (0 - 10) *</label>
+                            <input type="number" step="0.01" min="0" max="10" id="drive-cgpa-input" class="form-control" value="7.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Maximum Allowed Active Backlogs *</label>
+                            <input type="number" min="0" id="drive-backlogs-input" class="form-control" value="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Application Deadline *</label>
+                            <input type="datetime-local" id="drive-deadline-input" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Mandatory Technical Skills (Students must possess these to apply)</label>
+                        <select id="drive-mandatory-skills" class="form-control" multiple size="4" style="height: auto;">
+                            <!-- Populated with skills -->
+                        </select>
+                        <span style="font-size:0.75rem; color:var(--neutral-500);">Hold Ctrl / Cmd to select multiple mandatory skills.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Job Description & Responsibilities</label>
+                        <textarea id="drive-desc-input" class="form-control" rows="3" placeholder="Overview of the technical role, responsibilities, and selection procedure..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-drive')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Publish Placement Drive</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: REGISTER NEW COMPANY -->
+    <div class="modal-overlay" id="modal-new-company">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Register Recruiting Partner</h3>
+                <button class="modal-close" onclick="closeModal('modal-new-company')">&times;</button>
+            </div>
+            <form id="form-new-company" onsubmit="AdminApp.handleCreateCompany(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Company Name *</label>
+                        <input type="text" id="company-name-input" class="form-control" placeholder="e.g. Oracle India" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Industry Domain *</label>
+                        <input type="text" id="company-industry-input" class="form-control" placeholder="e.g. Enterprise Cloud & Database Software" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Official Website</label>
+                        <input type="url" id="company-website-input" class="form-control" placeholder="https://www.oracle.com">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">HR / Contact Person *</label>
+                            <input type="text" id="company-contact-name" class="form-control" placeholder="e.g. Sunita Rao" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">HR Official Email *</label>
+                            <input type="email" id="company-contact-email" class="form-control" placeholder="e.g. campus@oracle.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Contact Phone</label>
+                        <input type="tel" id="company-contact-phone" class="form-control" placeholder="+91 98765 00000">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-company')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Register Company</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: SCHEDULE INTERVIEW ROUND -->
+    <div class="modal-overlay" id="modal-schedule-interview">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Schedule Interview Round</h3>
+                <button class="modal-close" onclick="closeModal('modal-schedule-interview')">&times;</button>
+            </div>
+            <form id="form-schedule-interview" onsubmit="AdminApp.handleScheduleInterview(event)">
+                <input type="hidden" id="sched-app-id">
+                <div class="modal-body">
+                    <div style="background:var(--neutral-50); padding:0.75rem; border-radius:var(--radius-sm); margin-bottom:1rem; font-size:0.9rem;" id="sched-candidate-preview">
+                        Candidate Preview
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Round Number *</label>
+                            <input type="number" min="1" max="10" id="sched-round-num" class="form-control" value="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Round Name *</label>
+                            <input type="text" id="sched-round-name" class="form-control" placeholder="e.g. Technical Round 1 (DSA & System Design)" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Interview Mode *</label>
+                            <select id="sched-mode" class="form-control" required>
+                                <option value="online">Online (Teams / Zoom / GMeet)</option>
+                                <option value="offline">Offline (On-Campus)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Date & Time *</label>
+                            <input type="datetime-local" id="sched-time" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Meeting URL or On-Campus Venue *</label>
+                        <input type="text" id="sched-venue" class="form-control" placeholder="e.g. Placement Cell Seminar Hall 2 OR https://meet.google.com/xyz-abc" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-schedule-interview')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Confirm & Notify Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: UPDATE APPLICATION STATUS & NOTES -->
+    <div class="modal-overlay" id="modal-app-status">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 class="modal-title">Update Application Status</h3>
+                <button class="modal-close" onclick="closeModal('modal-app-status')">&times;</button>
+            </div>
+            <form id="form-app-status" onsubmit="AdminApp.handleUpdateAppStatus(event)">
+                <input type="hidden" id="status-app-id">
+                <div class="modal-body">
+                    <div style="background:var(--neutral-50); padding:0.75rem; border-radius:var(--radius-sm); margin-bottom:1rem; font-size:0.9rem;" id="status-candidate-preview">
+                        Candidate details
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Placement Verdict / Status *</label>
+                        <select id="status-select-val" class="form-control" required>
+                            <option value="applied">Applied</option>
+                            <option value="shortlisted">Shortlisted</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="selected">Selected (Offer Received) 🎉</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Administrative Notes & Evaluator Feedback</label>
+                        <textarea id="status-admin-notes" class="form-control" rows="3" placeholder="e.g. Cleared technical interview with strong problem-solving skills..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-app-status')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save & Send Notification</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 5: REGISTER NEW STUDENT -->
+    <div class="modal-overlay" id="modal-new-student">
+        <div class="modal-container large">
+            <div class="modal-header">
+                <h3 class="modal-title">👨‍🎓 Onboard New Student</h3>
+                <button class="modal-close" onclick="closeModal('modal-new-student')">&times;</button>
+            </div>
+            <form id="form-new-student" onsubmit="AdminApp.handleCreateStudent(event)">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            <input type="text" id="stud-name-input" class="form-control" placeholder="e.g. Rahul Sharma" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">University Email *</label>
+                            <input type="email" id="stud-email-input" class="form-control" placeholder="e.g. rahul.sharma@college.edu" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">University Roll Number *</label>
+                            <input type="text" id="stud-roll-input" class="form-control" placeholder="e.g. 21CSE088" required style="text-transform:uppercase;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Academic Branch *</label>
+                            <select id="stud-branch-input" class="form-control" required>
+                                <option value="Computer Science & Engineering">Computer Science & Engineering (CSE)</option>
+                                <option value="Information Technology">Information Technology (IT)</option>
+                                <option value="Electronics & Communication">Electronics & Communication (ECE)</option>
+                                <option value="Mechanical Engineering">Mechanical Engineering (MECH)</option>
+                                <option value="Civil Engineering">Civil Engineering (CIVIL)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Graduation Batch Year *</label>
+                            <input type="number" id="stud-year-input" class="form-control" value="2025" min="2020" max="2030" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cumulative CGPA (0.00 - 10.00) *</label>
+                            <input type="number" step="0.01" min="0" max="10" id="stud-cgpa-input" class="form-control" placeholder="e.g. 8.45" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Active Backlogs *</label>
+                            <input type="number" min="0" max="20" id="stud-backlogs-input" class="form-control" value="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Contact Phone</label>
+                            <input type="tel" id="stud-phone-input" class="form-control" placeholder="+91 98765 11111">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Initial Password (Default: Student@123)</label>
+                            <input type="text" id="stud-pass-input" class="form-control" placeholder="Student@123" value="Student@123">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-student')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Student Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
