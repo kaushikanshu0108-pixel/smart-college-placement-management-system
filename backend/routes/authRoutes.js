@@ -60,8 +60,7 @@ router.post('/login', async (req, res) => {
             }
         }
 
-        // Save into session
-        req.session.user = {
+        const sessionUser = {
             userId: user.user_id,
             fullName: user.full_name,
             email: user.email,
@@ -73,13 +72,37 @@ router.post('/login', async (req, res) => {
             activeBacklogs: studentData ? studentData.active_backlogs : 0
         };
 
-        return res.json({
-            success: true,
-            message: 'Authentication successful.',
-            user: req.session.user
-        });
+        // Use regenerate to prevent session fixation attacks (works with both Express 4 and 5 session)
+        if (typeof req.session.regenerate === 'function') {
+            req.session.regenerate((err) => {
+                if (err) {
+                    console.error('Session regenerate error:', err);
+                    return res.status(500).json({ success: false, message: 'Session error. Please try again.' });
+                }
+                req.session.user = sessionUser;
+                req.session.save((saveErr) => {
+                    if (saveErr) {
+                        console.error('Session save error:', saveErr);
+                        return res.status(500).json({ success: false, message: 'Session save error.' });
+                    }
+                    return res.json({
+                        success: true,
+                        message: 'Authentication successful.',
+                        user: req.session.user
+                    });
+                });
+            });
+        } else {
+            // Fallback for environments where regenerate isn't available
+            req.session.user = sessionUser;
+            return res.json({
+                success: true,
+                message: 'Authentication successful.',
+                user: req.session.user
+            });
+        }
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('Login error details:', error.message, error.stack);
         return res.status(500).json({
             success: false,
             message: 'An error occurred during login. Please try again.'

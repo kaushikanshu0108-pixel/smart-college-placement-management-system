@@ -70,10 +70,11 @@ app.use((req, res) => {
 
 // Centralized error handler
 app.use((err, req, res, next) => {
-    console.error('Unhandled Server Error:', err);
+    console.error('Unhandled Server Error:', err.message);
+    console.error(err.stack);
     res.status(500).json({
         success: false,
-        message: 'Internal server error occurred.'
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error occurred.'
     });
 });
 
