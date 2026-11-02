@@ -9,6 +9,7 @@
     "reset:passwords": "node reset-passwords.js",
     "test:login": "node test-login.js",
     "test:db": "node backend/config/db.js",
+    "seed": "node seed_db.js",
     "test": "node backend/config/db.js"
   },
   "keywords": [],

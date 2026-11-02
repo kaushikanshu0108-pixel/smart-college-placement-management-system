@@ -35,14 +35,26 @@ const StudentApp = {
         const targetTab = document.getElementById(tabId);
         if (targetTab) targetTab.classList.add('active');
 
-        // Highlight matching button
+        // Highlight matching tab button
         const buttons = document.querySelectorAll('.tab-btn');
         buttons.forEach(btn => {
             if (btn.getAttribute('onclick')?.includes(tabId)) {
                 btn.classList.add('active');
             }
         });
+
+        // Highlight matching navbar link
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(link => {
+            if (link.getAttribute('onclick')?.includes(tabId)) {
+                link.classList.add('active');
+            }
+        });
+
+        // Scroll to top of content smoothly
+        window.scrollTo({ top: 100, behavior: 'smooth' });
     },
+
 
     /**
      * 1. Load Student Dashboard Metrics & Profile

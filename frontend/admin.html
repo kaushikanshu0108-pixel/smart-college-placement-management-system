@@ -21,10 +21,12 @@
 
             <div class="nav-menu">
                 <a href="/" class="nav-link">Home Portal</a>
-                <a href="#analytics" class="nav-link" onclick="AdminApp.switchTab('tab-analytics')">Analytics</a>
-                <a href="#drives" class="nav-link" onclick="AdminApp.switchTab('tab-drives')">Drives</a>
-                <a href="#applications" class="nav-link" onclick="AdminApp.switchTab('tab-applications')">Applications</a>
-                <a href="#database" class="nav-link" onclick="AdminApp.switchTab('tab-database')">🔍 DB Inspector</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-analytics')">Analytics</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-drives')">Drives</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-applications')">Applications</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-students')">Students</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-companies')">Companies</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-database')">🔍 DB Inspector</a>
             </div>
 
             <div class="nav-user" style="display:flex; align-items:center; gap:0.75rem;">
@@ -284,11 +286,15 @@
                 <div class="card-body" style="padding: 1rem 1.5rem;">
                     <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                         <input type="text" id="filter-stud-search" class="form-control" placeholder="Search name, roll number, email..." style="max-width: 280px;" oninput="AdminApp.loadStudents()">
-                        <select id="filter-stud-branch" class="form-control" style="max-width: 180px;" onchange="AdminApp.loadStudents()">
+                        <select id="filter-stud-branch" class="form-control" style="max-width: 240px;" onchange="AdminApp.loadStudents()">
                             <option value="">All Branches</option>
                             <option value="Computer Science & Engineering">CSE</option>
                             <option value="Information Technology">IT</option>
+                            <option value="Artificial Intelligence & Data Science">AI &amp; Data Science</option>
+                            <option value="Software Engineering">Software Engineering</option>
+                            <option value="Computer Science & Business Systems">CS &amp; Business Systems</option>
                             <option value="Electronics & Communication">ECE</option>
+                            <option value="Cyber Security & IoT">Cyber Security &amp; IoT</option>
                             <option value="Mechanical Engineering">MECH</option>
                             <option value="Civil Engineering">CIVIL</option>
                         </select>
@@ -650,7 +656,11 @@
                             <select id="stud-branch-input" class="form-control" required>
                                 <option value="Computer Science & Engineering">Computer Science & Engineering (CSE)</option>
                                 <option value="Information Technology">Information Technology (IT)</option>
+                                <option value="Artificial Intelligence & Data Science">Artificial Intelligence & Data Science</option>
+                                <option value="Software Engineering">Software Engineering (SE)</option>
+                                <option value="Computer Science & Business Systems">CS & Business Systems (CSB)</option>
                                 <option value="Electronics & Communication">Electronics & Communication (ECE)</option>
+                                <option value="Cyber Security & IoT">Cyber Security & IoT</option>
                                 <option value="Mechanical Engineering">Mechanical Engineering (MECH)</option>
                                 <option value="Civil Engineering">Civil Engineering (CIVIL)</option>
                             </select>
