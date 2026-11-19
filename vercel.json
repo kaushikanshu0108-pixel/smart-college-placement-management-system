@@ -1,9 +1,22 @@
 {
   "version": 2,
+  "outputDirectory": "frontend",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "destination": "/api/index.js"
+    },
+    {
+      "source": "/student",
+      "destination": "/student.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/support",
+      "destination": "/support.html"
     }
   ]
 }
