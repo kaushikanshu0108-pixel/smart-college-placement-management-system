@@ -19,7 +19,8 @@ const dbConfig = {
     connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT, 10) || 10,
     queueLimit: 0,
     dateStrings: true,
-    timezone: '+00:00'
+    timezone: '+00:00',
+    connectTimeout: 10000
 };
 
 // Create a persistent MySQL connection pool
@@ -72,5 +73,21 @@ if (require.main === module) {
 
 module.exports = {
     pool,
-    testConnection
+    testConnection,
+    withTransaction
 };
+
+async function withTransaction(fn) {
+  const connection = await pool.getConnection();
+  await connection.beginTransaction();
+  try {
+    const result = await fn(connection);
+    await connection.commit();
+    return result;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}

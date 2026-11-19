@@ -160,9 +160,11 @@ const ThemeManager = {
     apply(theme) {
         if (theme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.style.colorScheme = 'dark';
             document.querySelectorAll('.theme-toggle-btn').forEach(b => b.innerHTML = '☀️');
         } else {
             document.documentElement.removeAttribute('data-theme');
+            document.documentElement.style.colorScheme = 'light';
             document.querySelectorAll('.theme-toggle-btn').forEach(b => b.innerHTML = '🌙');
         }
     }

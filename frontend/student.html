@@ -6,6 +6,7 @@
     <title>Student Portal - Smart College Placement Management System</title>
     <meta name="description" content="Student placement dashboard for checking eligibility, submitting drive applications, tracking interview rounds, and managing profile skills.">
     <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -15,20 +16,23 @@
             <a href="/student.html" class="brand">
                 <div class="brand-icon">🎓</div>
                 <span>SCPMS</span>
-                <span class="brand-badge">Student Portal</span>
+                <span class="brand-badge brand-badge-student">Student</span>
             </a>
 
-            <div class="nav-menu">
-                <a href="/" class="nav-link">Home Portal</a>
+            <div class="nav-menu" id="student-nav-menu">
+                <a href="/" class="nav-link">Home</a>
                 <a href="javascript:void(0)" class="nav-link" onclick="StudentApp.switchTab('tab-overview')">Overview</a>
-                <a href="javascript:void(0)" class="nav-link" onclick="StudentApp.switchTab('tab-drives')">Browse Drives</a>
-                <a href="javascript:void(0)" class="nav-link" onclick="StudentApp.switchTab('tab-applications')">My Applications</a>
-                <a href="javascript:void(0)" class="nav-link" onclick="StudentApp.switchTab('tab-skills')">Skills &amp; Profile</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="StudentApp.switchTab('tab-drives')">Drives</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="StudentApp.switchTab('tab-applications')">Applications</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="StudentApp.switchTab('tab-skills')">Skills</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="StudentApp.switchTab('tab-progress')">Analytics</a>
+                <a href="/support.html" class="nav-link" target="_blank">Support</a>
             </div>
 
-            <div class="nav-user" style="display:flex; align-items:center; gap:0.75rem;">
-                <button class="theme-toggle-btn" onclick="ThemeManager.toggle()" title="Toggle Dark/Light Mode">🌙</button>
-                <div id="navbar-user-info" style="display:flex; align-items:center; gap:0.75rem;"></div>
+            <div class="nav-user">
+                <button class="theme-toggle-btn" onclick="ThemeManager.toggle()" title="Toggle Dark/Light Mode" aria-label="Toggle Theme">🌙</button>
+                <div id="navbar-user-info"></div>
+                <button class="nav-toggle-btn" onclick="document.getElementById('student-nav-menu').classList.toggle('mobile-open')" aria-label="Toggle mobile navigation">☰</button>
             </div>
         </div>
     </nav>
@@ -37,7 +41,7 @@
     <main class="main-wrapper">
 
         <!-- Student Profile Overview Banner -->
-        <div class="card" style="margin-bottom: 2rem; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);">
+        <div class="card" style="margin-bottom: 2rem;">
             <div class="card-body" style="padding: 1.75rem;">
                 <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
                     <div style="display: flex; align-items: center; gap: 1.25rem;">
@@ -59,12 +63,12 @@
                     </div>
 
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                        <div style="background: white; border: 1px solid var(--neutral-200); border-radius: var(--radius-md); padding: 0.75rem 1.25rem; text-align: center; box-shadow: var(--card-shadow);">
+                        <div style="background: var(--neutral-50); border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 0.75rem 1.25rem; text-align: center; box-shadow: var(--card-shadow);">
                             <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--neutral-500);">Current CGPA</div>
                             <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);" id="student-cgpa">--</div>
                         </div>
 
-                        <div style="background: white; border: 1px solid var(--neutral-200); border-radius: var(--radius-md); padding: 0.75rem 1.25rem; text-align: center; box-shadow: var(--card-shadow);">
+                        <div style="background: var(--neutral-50); border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 0.75rem 1.25rem; text-align: center; box-shadow: var(--card-shadow);">
                             <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--neutral-500);">Active Backlogs</div>
                             <div style="font-size: 1.5rem; font-weight: 800;" id="student-backlogs">--</div>
                         </div>
@@ -73,10 +77,28 @@
             </div>
         </div>
 
+        <!-- Student Quick Actions Toolbar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.25rem;">
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <button class="btn btn-secondary btn-sm" onclick="StudentApp.refreshDashboard()">
+                    🔄 Refresh Dashboard
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="StudentApp.switchTab('tab-progress')">
+                    📈 Placement Readiness
+                </button>
+                <a href="/support.html" target="_blank" class="btn btn-secondary btn-sm">
+                    💬 Support &amp; Help Desk
+                </a>
+            </div>
+            <div style="font-size:0.825rem; color:var(--neutral-500);">
+                Verified Student Identity • Active Placement Drive Season
+            </div>
+        </div>
+
         <!-- Navigation Tabs -->
         <div class="tab-nav">
             <button class="tab-btn active" onclick="StudentApp.switchTab('tab-overview')">
-                📊 Overview & Alerts
+                📊 Overview &amp; Alerts
             </button>
             <button class="tab-btn" onclick="StudentApp.switchTab('tab-drives')">
                 💼 Placement Drives <span class="tab-badge" id="tab-badge-drives">0</span>
@@ -85,7 +107,10 @@
                 📝 My Applications <span class="tab-badge" id="tab-badge-apps">0</span>
             </button>
             <button class="tab-btn" onclick="StudentApp.switchTab('tab-skills')">
-                🛠️ Skills & Resume
+                🛠️ Skills &amp; Resume
+            </button>
+            <button class="tab-btn" onclick="StudentApp.switchTab('tab-progress')">
+                📈 Readiness &amp; Analytics
             </button>
         </div>
 
@@ -247,6 +272,87 @@
                             </button>
                         </form>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: READINESS & PLACEMENT ANALYTICS -->
+        <section id="tab-progress" class="tab-content">
+            <!-- Profile Completion & Readiness Header Card -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-header">
+                    <h3 class="card-title">🎯 Placement Profile Completeness Score</h3>
+                    <span class="badge badge-selected" id="profile-completion-pct" style="font-size:0.85rem;">0% Complete</span>
+                </div>
+                <div class="card-body">
+                    <p style="font-size:0.875rem; color:var(--neutral-600); margin-bottom:1rem;">
+                        Recruiters filter candidates based on academic standing, verified contact phone, public resume links, and certified skill tags:
+                    </p>
+                    <div style="width:100%; height:10px; background:var(--neutral-200); border-radius:5px; overflow:hidden; margin-bottom:1.25rem;">
+                        <div id="profile-completion-bar" style="width:0%; height:100%; background:linear-gradient(90deg, var(--primary) 0%, var(--success) 100%); transition:width 0.4s ease;"></div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:0.75rem;" id="completion-checklist-grid">
+                        <div class="checklist-item" id="chk-cgpa">
+                            <span>CGPA Recorded</span>
+                            <span id="chk-cgpa-val">⏳</span>
+                        </div>
+                        <div class="checklist-item" id="chk-backlogs">
+                            <span>Backlog Standing</span>
+                            <span id="chk-backlogs-val">⏳</span>
+                        </div>
+                        <div class="checklist-item" id="chk-phone">
+                            <span>Contact Phone</span>
+                            <span id="chk-phone-val">⏳</span>
+                        </div>
+                        <div class="checklist-item" id="chk-resume">
+                            <span>Resume Uploaded</span>
+                            <span id="chk-resume-val">⏳</span>
+                        </div>
+                        <div class="checklist-item" id="chk-skills">
+                            <span>Skills Tagged</span>
+                            <span id="chk-skills-val">⏳</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Two Interactive Charts -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(400px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🍩 Application Status Breakdown</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-box">
+                            <canvas id="chart-student-apps"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">📊 Placement Drive Eligibility Ratio</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-box">
+                            <canvas id="chart-student-eligibility"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help and Quick Actions Banner -->
+            <div class="card" style="border-left:4px solid var(--primary);">
+                <div class="card-body" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                    <div>
+                        <h4 style="font-weight:700; color:var(--neutral-900); font-size:1.05rem;">Need guidance with your applications or interviews?</h4>
+                        <p style="font-size:0.875rem; color:var(--neutral-600); margin-top:0.25rem;">
+                            The Placement Cell provides mock interview sessions, resume reviews, and technical interview preparation.
+                        </p>
+                    </div>
+                    <a href="/support.html" target="_blank" class="btn btn-primary">
+                        Contact Placement Cell →
+                    </a>
                 </div>
             </div>
         </section>

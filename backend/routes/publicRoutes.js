@@ -64,4 +64,91 @@ router.get('/public/drives', async (req, res) => {
     }
 });
 
+// GET /api/support/config - Check Web3Forms configuration status & public client key
+router.get('/support/config', (req, res) => {
+    const accessKey = process.env.WEB3FORMS_ACCESS_KEY || '';
+    return res.json({
+        success: true,
+        isConfigured: Boolean(accessKey && accessKey !== 'your_web3forms_access_key_here'),
+        accessKey: accessKey && accessKey !== 'your_web3forms_access_key_here' ? accessKey : null
+    });
+});
+
+// POST /api/support/submit - Server-side validated submission to Web3Forms
+router.post('/support/submit', async (req, res) => {
+    try {
+        const { full_name, email, roll_number, role, subject, category, message, botcheck } = req.body;
+
+        // Anti-spam honeypot detection
+        if (botcheck) {
+            return res.status(400).json({ success: false, message: 'Spam submission rejected.' });
+        }
+
+        // Validate required fields
+        if (!full_name || !full_name.trim()) {
+            return res.status(400).json({ success: false, message: 'Full name is required.' });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email.trim())) {
+            return res.status(400).json({ success: false, message: 'A valid college email address is required.' });
+        }
+
+        if (!subject || !subject.trim()) {
+            return res.status(400).json({ success: false, message: 'Subject is required.' });
+        }
+
+        if (!message || !message.trim()) {
+            return res.status(400).json({ success: false, message: 'Message content cannot be empty.' });
+        }
+
+        const accessKey = process.env.WEB3FORMS_ACCESS_KEY;
+        if (!accessKey || accessKey === 'your_web3forms_access_key_here') {
+            return res.status(503).json({
+                success: false,
+                message: 'Support portal email dispatch is currently unconfigured. Please configure WEB3FORMS_ACCESS_KEY in .env.'
+            });
+        }
+
+        // Forward to official Web3Forms API
+        const payload = {
+            access_key: accessKey,
+            name: full_name.trim(),
+            email: email.trim(),
+            subject: `[SCPMS Support - ${category || 'General'}] ${subject.trim()}`,
+            message: `User Role: ${role || 'Student'}\nRoll No: ${roll_number || 'N/A'}\nCategory: ${category || 'General'}\n\nMessage:\n${message.trim()}`,
+            from_name: 'SCPMS Placement Portal'
+        };
+
+        const response = await fetch('https://api.web3forms.com/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.ok && data.success) {
+            return res.json({
+                success: true,
+                message: 'Your support ticket has been dispatched successfully! Our placement cell coordinators will review it shortly.'
+            });
+        } else {
+            return res.status(response.status || 502).json({
+                success: false,
+                message: data.message || 'Web3Forms dispatch service returned an error. Please try again.'
+            });
+        }
+    } catch (error) {
+        console.error('Error forwarding support request:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server failed to transmit support ticket: ' + error.message
+        });
+    }
+});
+
 module.exports = router;

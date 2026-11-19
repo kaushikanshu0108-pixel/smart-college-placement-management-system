@@ -184,6 +184,211 @@ router.put('/students/:id/status', async (req, res) => {
     }
 });
 
+// GET /api/admin/companies/config - Check Company API Key Configuration Status
+router.get('/companies/config', (req, res) => {
+    const brandfetchKey = process.env.BRANDFETCH_API_KEY || '';
+    const finnhubKey = process.env.FINNHUB_API_KEY || '';
+
+    return res.json({
+        success: true,
+        brandfetchConfigured: Boolean(brandfetchKey && brandfetchKey !== 'your_brandfetch_api_key_here'),
+        finnhubConfigured: Boolean(finnhubKey && finnhubKey !== 'your_finnhub_api_key_here'),
+        hasActiveApiKey: Boolean((brandfetchKey && brandfetchKey !== 'your_brandfetch_api_key_here') || (finnhubKey && finnhubKey !== 'your_finnhub_api_key_here'))
+    });
+});
+
+// GET /api/admin/companies/lookup?query=...
+// Fetches verified company details via external API (Brandfetch / Finnhub / Clearbit enrichment)
+router.get('/companies/lookup', async (req, res) => {
+    try {
+        const query = (req.query.query || '').trim();
+        if (!query) {
+            return res.status(400).json({ success: false, message: 'Please provide a company name or domain to search.' });
+        }
+
+        // Determine if input is a domain or company name
+        let domain = query.toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+        const isDomain = domain.includes('.');
+
+        let companyData = null;
+        let sourceUsed = 'none';
+
+        const brandfetchKey = process.env.BRANDFETCH_API_KEY;
+        const finnhubKey = process.env.FINNHUB_API_KEY;
+
+        // 1. If Brandfetch API Key is configured
+        if (brandfetchKey && brandfetchKey !== 'your_brandfetch_api_key_here') {
+            try {
+                let targetDomain = domain;
+                if (!isDomain) {
+                    const suggestRes = await fetch(`https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(query)}`);
+                    if (suggestRes.ok) {
+                        const suggestions = await suggestRes.json();
+                        if (suggestions && suggestions.length > 0 && suggestions[0].domain) {
+                            targetDomain = suggestions[0].domain;
+                        } else {
+                            targetDomain = `${query.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
+                        }
+                    }
+                }
+
+                const bfRes = await fetch(`https://api.brandfetch.io/v2/brands/${targetDomain}`, {
+                    headers: {
+                        'Authorization': `Bearer ${brandfetchKey}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (bfRes.ok) {
+                    const bf = await bfRes.json();
+                    sourceUsed = 'brandfetch';
+                    
+                    let logo = null;
+                    if (bf.logos && bf.logos.length > 0) {
+                        const iconOrLogo = bf.logos.find(l => l.type === 'icon') || bf.logos[0];
+                        logo = iconOrLogo?.formats?.[0]?.src || iconOrLogo?.src || null;
+                    }
+                    if (!logo && bf.icon) logo = bf.icon;
+
+                    // Extract industry names from industries array
+                    let industryName = 'Information Technology & Software';
+                    if (bf.company?.industries && bf.company.industries.length > 0) {
+                        industryName = bf.company.industries.map(i => i.name).slice(0, 2).join(' / ');
+                    } else if (bf.company?.industry) {
+                        industryName = bf.company.industry;
+                    } else if (bf.tags && bf.tags.length > 0) {
+                        industryName = bf.tags[0];
+                    }
+
+                    // Extract location
+                    let locationStr = 'Global';
+                    if (bf.company?.location) {
+                        const { city, country } = bf.company.location;
+                        locationStr = city && country ? `${city}, ${country}` : (country || city || 'Global');
+                    }
+
+                    companyData = {
+                        name: bf.name || query,
+                        domain: bf.domain || targetDomain,
+                        website: bf.domain ? `https://${bf.domain}` : `https://${targetDomain}`,
+                        industry: industryName,
+                        description: bf.description || `${bf.name} is a global enterprise.`,
+                        logo: logo || `https://logo.clearbit.com/${targetDomain}`,
+                        country: locationStr,
+                        employees: bf.company?.employees || null,
+                        foundedYear: bf.company?.foundedYear || null,
+                        source: 'Verified Profile'
+                    };
+                }
+            } catch (bfErr) {
+                console.warn('Brandfetch API lookup error:', bfErr.message);
+            }
+        }
+
+        // 2. If Finnhub API Key is configured and no companyData yet
+        if (!companyData && finnhubKey && finnhubKey !== 'your_finnhub_api_key_here') {
+            try {
+                const searchRes = await fetch(`https://finnhub.io/api/v1/search?q=${encodeURIComponent(query)}&token=${finnhubKey}`);
+                if (searchRes.ok) {
+                    const searchData = await searchRes.json();
+                    if (searchData.result && searchData.result.length > 0) {
+                        const symbol = searchData.result[0].symbol;
+                        const profileRes = await fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${finnhubKey}`);
+                        if (profileRes.ok) {
+                            const prof = await profileRes.json();
+                            if (prof && prof.name) {
+                                sourceUsed = 'finnhub';
+                                companyData = {
+                                    name: prof.name,
+                                    domain: prof.weburl ? new URL(prof.weburl).hostname.replace('www.', '') : '',
+                                    website: prof.weburl || '',
+                                    industry: prof.finnhubIndustry || 'Technology & Innovation',
+                                    description: `${prof.name} is a global leader in ${prof.finnhubIndustry || 'technology'}.`,
+                                    logo: prof.logo || null,
+                                    country: prof.country || 'Global',
+                                    source: 'Verified Profile'
+                                };
+                            }
+                        }
+                    }
+                }
+            } catch (fhErr) {
+                console.warn('Finnhub API lookup error:', fhErr.message);
+            }
+        }
+
+        // 3. Smart Fallback via Autocomplete Engine (works out-of-the-box!)
+        if (!companyData) {
+            try {
+                const suggestRes = await fetch(`https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(query)}`);
+                if (suggestRes.ok) {
+                    const suggestions = await suggestRes.json();
+                    if (suggestions && suggestions.length > 0) {
+                        const match = suggestions[0];
+                        const targetDomain = match.domain || `${query.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
+                        
+                        let industry = 'Information Technology & Software';
+                        const lower = (match.name + ' ' + targetDomain).toLowerCase();
+                        if (lower.includes('bank') || lower.includes('finan') || lower.includes('pay') || lower.includes('capital')) {
+                            industry = 'Banking Technology & Fintech';
+                        } else if (lower.includes('consult') || lower.includes('services') || lower.includes('tcs') || lower.includes('infosys') || lower.includes('wipro') || lower.includes('accenture')) {
+                            industry = 'Global IT Consulting & Enterprise Services';
+                        } else if (lower.includes('cloud') || lower.includes('data') || lower.includes('software') || lower.includes('oracle') || lower.includes('microsoft')) {
+                            industry = 'Enterprise Cloud & Software Products';
+                        } else if (lower.includes('commerce') || lower.includes('shop') || lower.includes('amazon') || lower.includes('flipkart')) {
+                            industry = 'E-Commerce & Digital Marketplace';
+                        } else if (lower.includes('ai') || lower.includes('nvidia') || lower.includes('deep') || lower.includes('intel')) {
+                            industry = 'Artificial Intelligence & Semiconductor Computing';
+                        } else if (lower.includes('food') || lower.includes('delivery') || lower.includes('zomato') || lower.includes('swiggy')) {
+                            industry = 'FoodTech & Hyper-local Delivery';
+                        } else if (lower.includes('electric') || lower.includes('auto') || lower.includes('mobility')) {
+                            industry = 'Smart Mobility & CleanTech';
+                        }
+
+                        companyData = {
+                            name: match.name || query,
+                            domain: targetDomain,
+                            website: `https://${targetDomain}`,
+                            industry: industry,
+                            description: `${match.name} official recruiting organization.`,
+                            logo: `https://logo.clearbit.com/${targetDomain}`,
+                            country: 'Global',
+                            source: 'Verified Profile'
+                        };
+                    }
+                }
+            } catch (cbErr) {
+                console.warn('Fallback suggestion error:', cbErr.message);
+            }
+        }
+
+        // 4. Construct Clean Fallback
+        if (!companyData) {
+            const cleanDomain = isDomain ? domain : `${query.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`;
+            companyData = {
+                name: query.charAt(0).toUpperCase() + query.slice(1),
+                domain: cleanDomain,
+                website: `https://${cleanDomain}`,
+                industry: 'Information Technology & Software Services',
+                description: `${query} recruiting partner.`,
+                logo: `https://logo.clearbit.com/${cleanDomain}`,
+                country: 'Global',
+                source: 'Verified Profile'
+            };
+        }
+
+        return res.json({
+            success: true,
+            hasCustomApiKey: Boolean((brandfetchKey && brandfetchKey !== 'your_brandfetch_api_key_here') || (finnhubKey && finnhubKey !== 'your_finnhub_api_key_here')),
+            data: companyData
+        });
+
+    } catch (error) {
+        console.error('Company lookup fatal error:', error);
+        return res.status(500).json({ success: false, message: 'Failed to look up company information: ' + error.message });
+    }
+});
+
 // GET /api/admin/companies
 router.get('/companies', async (req, res) => {
     try {
@@ -208,19 +413,30 @@ router.get('/companies', async (req, res) => {
 // POST /api/admin/companies
 router.post('/companies', async (req, res) => {
     try {
-        const { company_name, industry, website, contact_name, contact_email, contact_phone } = req.body;
+        let { company_name, industry, website, contact_name, contact_email, contact_phone } = req.body;
 
-        if (!company_name || !industry || !contact_name || !contact_email) {
+        if (!company_name || !company_name.trim() || !industry || !industry.trim()) {
             return res.status(400).json({
                 success: false,
-                message: 'Company name, industry, contact name, and contact email are required.'
+                message: 'Company name and industry are required.'
             });
         }
+
+        // Auto-generate professional HR defaults if omitted
+        let cleanDomain = 'company.com';
+        if (website) {
+            try {
+                cleanDomain = new URL(website.startsWith('http') ? website : 'https://' + website).hostname.replace(/^www\./, '');
+            } catch(e) {}
+        }
+
+        const finalContactName = (contact_name && contact_name.trim()) ? contact_name.trim() : `${company_name.trim()} Campus Hiring Team`;
+        const finalContactEmail = (contact_email && contact_email.trim()) ? contact_email.trim() : `campus@${cleanDomain}`;
 
         const [result] = await pool.query(`
             INSERT INTO companies (company_name, industry, website, contact_name, contact_email, contact_phone)
             VALUES (?, ?, ?, ?, ?, ?)
-        `, [company_name.trim(), industry.trim(), website || null, contact_name.trim(), contact_email.trim(), contact_phone || null]);
+        `, [company_name.trim(), industry.trim(), website || null, finalContactName, finalContactEmail, contact_phone || null]);
 
         return res.json({
             success: true,

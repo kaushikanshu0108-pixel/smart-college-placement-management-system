@@ -56,6 +56,23 @@ app.get('/admin', (req, res) => {
     });
 });
 
+app.get('/support', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'support.html'), (err) => {
+        if (err && !res.headersSent) res.status(404).send('Support page not found');
+    });
+});
+
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+  try {
+    const { pool } = require('./config/db');
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', database: 'connected', timestamp: new Date().toISOString() });
+  } catch (e) {
+    res.status(503).json({ status: 'degraded', database: 'unreachable', timestamp: new Date().toISOString() });
+  }
+});
+
 // Fallback for SPA routing and static pages
 app.use((req, res) => {
     if (req.path.startsWith('/api/')) {
@@ -102,5 +119,18 @@ async function startServer() {
 if (!process.env.VERCEL) {
     startServer();
 }
+
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received. Closing DB pool...');
+  const { pool } = require('./config/db');
+  await pool.end();
+  process.exit(0);
+});
+process.on('SIGINT', async () => {
+  console.log('SIGINT received. Closing DB pool...');
+  const { pool } = require('./config/db');
+  await pool.end();
+  process.exit(0);
+});
 
 module.exports = app;

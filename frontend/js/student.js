@@ -133,9 +133,177 @@ const StudentApp = {
             } else {
                 notifContainer.innerHTML = `<div style="text-align:center; color:var(--neutral-400); padding:2rem;">No notifications.</div>`;
             }
+
+            // Profile Completion Score Calculation
+            let completedItems = 0;
+            const totalItems = 5;
+
+            // 1. CGPA recorded
+            const chkCgpa = document.getElementById('chk-cgpa');
+            const chkCgpaVal = document.getElementById('chk-cgpa-val');
+            if (student.cgpa) {
+                completedItems++;
+                if (chkCgpa) chkCgpa.className = 'checklist-item pass';
+                if (chkCgpaVal) chkCgpaVal.textContent = `✅ ${student.cgpa}`;
+            }
+
+            // 2. Backlogs standing
+            const chkBacklogs = document.getElementById('chk-backlogs');
+            const chkBacklogsVal = document.getElementById('chk-backlogs-val');
+            if (student.activeBacklogs === 0) {
+                completedItems++;
+                if (chkBacklogs) chkBacklogs.className = 'checklist-item pass';
+                if (chkBacklogsVal) chkBacklogsVal.textContent = '✅ 0 Backlogs';
+            } else {
+                if (chkBacklogs) chkBacklogs.className = 'checklist-item fail';
+                if (chkBacklogsVal) chkBacklogsVal.textContent = `⚠️ ${student.activeBacklogs} Active`;
+            }
+
+            // 3. Contact Phone
+            const chkPhone = document.getElementById('chk-phone');
+            const chkPhoneVal = document.getElementById('chk-phone-val');
+            if (student.phone && student.phone.trim()) {
+                completedItems++;
+                if (chkPhone) chkPhone.className = 'checklist-item pass';
+                if (chkPhoneVal) chkPhoneVal.textContent = '✅ Verified';
+            } else {
+                if (chkPhone) chkPhone.className = 'checklist-item fail';
+                if (chkPhoneVal) chkPhoneVal.textContent = '❌ Missing';
+            }
+
+            // 4. Resume URL
+            const chkResume = document.getElementById('chk-resume');
+            const chkResumeVal = document.getElementById('chk-resume-val');
+            if (student.resumeUrl && student.resumeUrl.trim()) {
+                completedItems++;
+                if (chkResume) chkResume.className = 'checklist-item pass';
+                if (chkResumeVal) chkResumeVal.textContent = '✅ Uploaded';
+            } else {
+                if (chkResume) chkResume.className = 'checklist-item fail';
+                if (chkResumeVal) chkResumeVal.textContent = '❌ Missing';
+            }
+
+            // 5. Bio or profile summary
+            const chkSkills = document.getElementById('chk-skills');
+            const chkSkillsVal = document.getElementById('chk-skills-val');
+            if (student.profileSummary && student.profileSummary.trim()) {
+                completedItems++;
+                if (chkSkills) chkSkills.className = 'checklist-item pass';
+                if (chkSkillsVal) chkSkillsVal.textContent = '✅ Recorded';
+            } else {
+                if (chkSkills) chkSkills.className = 'checklist-item fail';
+                if (chkSkillsVal) chkSkillsVal.textContent = '❌ Add Bio';
+            }
+
+            const pct = Math.round((completedItems / totalItems) * 100);
+            const elPct = document.getElementById('profile-completion-pct');
+            const elBar = document.getElementById('profile-completion-bar');
+            if (elPct) elPct.textContent = `${pct}% Complete`;
+            if (elBar) elBar.style.width = `${pct}%`;
+
+            this.renderStudentCharts();
         } catch (error) {
             console.error('Failed to load dashboard:', error);
             showToast('Could not refresh dashboard metrics', 'error');
+        }
+    },
+
+    appsChartInstance: null,
+    eligibilityChartInstance: null,
+
+    /**
+     * Refresh all student data
+     */
+    async refreshDashboard() {
+        showToast('Refreshing student data...', 'info');
+        try {
+            await Promise.all([
+                this.loadDashboard(),
+                this.loadDrives(),
+                this.loadApplications(),
+                this.loadSkillsAndProfile()
+            ]);
+            showToast('Student portal refreshed!', 'success');
+        } catch (e) {
+            showToast('Refresh failed: ' + e.message, 'error');
+        }
+    },
+
+    renderStudentCharts() {
+        if (typeof Chart === 'undefined' || !this.dashboardData) return;
+
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const textColor = isDark ? '#cbd5e1' : '#475569';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+
+        const stats = this.dashboardData.stats || {};
+
+        // 1. Application Breakdown Chart
+        const appCtx = document.getElementById('chart-student-apps');
+        if (appCtx) {
+            if (this.appsChartInstance) this.appsChartInstance.destroy();
+
+            const appCount = parseInt(stats.total_applications, 10) || 0;
+            const applied = parseInt(stats.applied_count, 10) || 0;
+            const shortlisted = parseInt(stats.shortlisted_count, 10) || 0;
+            const inProgress = parseInt(stats.in_progress_count, 10) || 0;
+            const selected = parseInt(stats.selected_count, 10) || 0;
+            const rejected = parseInt(stats.rejected_count, 10) || 0;
+
+            const labels = ['Submitted (Applied)', 'Shortlisted', 'In Progress', 'Offers Received', 'Rejected'];
+            const data = [applied, shortlisted, inProgress, selected, rejected];
+
+            this.appsChartInstance = new Chart(appCtx, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: appCount === 0 ? [1, 0, 0, 0, 0] : data,
+                        backgroundColor: appCount === 0 ? ['#e2e8f0'] : ['#3b82f6', '#f59e0b', '#8b5cf6', '#10b981', '#ef4444'],
+                        borderColor: isDark ? '#111827' : '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: textColor } }
+                    }
+                }
+            });
+        }
+
+        // 2. Drive Eligibility Ratio Chart
+        const eligCtx = document.getElementById('chart-student-eligibility');
+        if (eligCtx) {
+            if (this.eligibilityChartInstance) this.eligibilityChartInstance.destroy();
+
+            const totalOpen = parseInt(stats.openDrivesCount, 10) || 0;
+            const eligible = parseInt(stats.eligibleDrivesCount, 10) || 0;
+            const ineligible = Math.max(0, totalOpen - eligible);
+
+            this.eligibilityChartInstance = new Chart(eligCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Eligible Opportunities', 'Ineligible (Cutoff / Backlogs)'],
+                    datasets: [{
+                        label: 'Campus Drives',
+                        data: [eligible, ineligible],
+                        backgroundColor: ['#10b981', '#f87171'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { color: textColor } },
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1 } }
+                    }
+                }
+            });
         }
     },
 

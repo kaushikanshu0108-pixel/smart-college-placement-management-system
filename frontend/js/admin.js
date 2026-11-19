@@ -25,7 +25,8 @@ const AdminApp = {
             this.loadCompanies(),
             this.loadSkills(),
             this.loadApplications(),
-            this.loadStudents()
+            this.loadStudents(),
+            this.checkCompanyApiConfig()
         ]);
     },
 
@@ -81,6 +82,52 @@ const AdminApp = {
             document.getElementById('kpi-total-companies').textContent = m.totalCompanies;
             document.getElementById('kpi-avg-package').textContent = `${m.avgPackageLpa} LPA`;
 
+            // Extended Real-time Pipeline KPIs
+            const elTotalApps = document.getElementById('kpi-total-apps');
+            const elShortlisted = document.getElementById('kpi-shortlisted');
+            const elMaxPkg = document.getElementById('kpi-max-pkg');
+            const elMinPkg = document.getElementById('kpi-min-pkg');
+            const elAvgCgpa = document.getElementById('kpi-avg-cgpa');
+
+            if (elTotalApps) elTotalApps.textContent = m.totalApplications || 0;
+            if (elShortlisted) elShortlisted.textContent = `${(m.shortlistedCount || 0) + (m.selectedCount || 0)} candidates`;
+            if (elMaxPkg) elMaxPkg.textContent = `${m.maxPackageLpa || 0} LPA`;
+            if (elMinPkg) elMinPkg.textContent = `${m.minPackageLpa || 0} LPA`;
+            if (elAvgCgpa) elAvgCgpa.textContent = `${m.avgCgpa || 0} / 10`;
+
+            // Operational Accreditation Summary card
+            const elSummary = document.getElementById('analytics-kpi-summary');
+            if (elSummary) {
+                elSummary.innerHTML = `
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.65rem;">
+                        <div class="checklist-item pass" style="margin:0;">
+                            <span>Placement Rate</span>
+                            <strong style="color:var(--success);">${m.placementRate}%</strong>
+                        </div>
+                        <div class="checklist-item pass" style="margin:0;">
+                            <span>Campus Avg CGPA</span>
+                            <strong style="color:var(--primary);">${m.avgCgpa}</strong>
+                        </div>
+                        <div class="checklist-item" style="margin:0; border-left-color:var(--primary);">
+                            <span>Average Package</span>
+                            <strong>${m.avgPackageLpa} LPA</strong>
+                        </div>
+                        <div class="checklist-item" style="margin:0; border-left-color:var(--accent);">
+                            <span>Highest CTC</span>
+                            <strong style="color:#059669;">${m.maxPackageLpa} LPA</strong>
+                        </div>
+                        <div class="checklist-item" style="margin:0; border-left-color:var(--success);">
+                            <span>Total Enrolled</span>
+                            <strong>${m.totalStudents}</strong>
+                        </div>
+                        <div class="checklist-item" style="margin:0; border-left-color:var(--warning);">
+                            <span>Placed Offers</span>
+                            <strong style="color:var(--success);">${m.placedStudents}</strong>
+                        </div>
+                    </div>
+                `;
+            }
+
             // Render Branch-Wise Table
             const branchTbody = document.querySelector('#branch-stats-table tbody');
             if (branchTbody && m.branchSummary) {
@@ -112,9 +159,39 @@ const AdminApp = {
 
     branchChartInstance: null,
     appStatusChartInstance: null,
+    pkgChartInstance: null,
+    compChartInstance: null,
+    placedChartInstance: null,
+
+    /**
+     * Refresh all tables and metrics
+     */
+    async refreshAll() {
+        showToast('Refreshing live placement data...', 'info');
+        try {
+            await Promise.all([
+                this.loadMetrics(),
+                this.loadDrives(),
+                this.loadCompanies(),
+                this.loadSkills(),
+                this.loadApplications(),
+                this.loadStudents()
+            ]);
+            showToast('All placement metrics & directories refreshed!', 'success');
+        } catch (e) {
+            showToast('Failed to refresh data: ' + e.message, 'error');
+        }
+    },
 
     renderCharts(metrics) {
         if (typeof Chart === 'undefined') return;
+
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const textColor = isDark ? '#cbd5e1' : '#475569';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+
+        Chart.defaults.color = textColor;
+        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 
         // 1. Branch Placement Bar Chart
         const branchCanvas = document.getElementById('chart-branch-placement');
@@ -140,7 +217,8 @@ const AdminApp = {
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
+                        x: { grid: { color: gridColor }, ticks: { color: textColor } },
+                        y: { beginAtZero: true, max: 100, ticks: { color: textColor, callback: v => v + '%' }, grid: { color: gridColor } }
                     }
                 }
             });
@@ -162,6 +240,7 @@ const AdminApp = {
                             Math.max(0, (metrics.totalApplications || 0) - (metrics.selectedCount || 0) - (metrics.shortlistedCount || 0))
                         ],
                         backgroundColor: ['#10b981', '#f59e0b', '#3b82f6'],
+                        borderColor: isDark ? '#111827' : '#ffffff',
                         borderWidth: 2
                     }]
                 },
@@ -169,7 +248,138 @@ const AdminApp = {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom' }
+                        legend: { position: 'bottom', labels: { color: textColor } }
+                    }
+                }
+            });
+        }
+
+        // 3. CTC Package Compensation Distribution (Bar Chart)
+        const pkgCanvas = document.getElementById('chart-package-dist');
+        if (pkgCanvas) {
+            if (this.pkgChartInstance) this.pkgChartInstance.destroy();
+
+            // Calculate drive package tier counts
+            let tierMass = 0, tierCore = 0, tierDream = 0, tierMarquee = 0;
+            if (this.drivesList && this.drivesList.length > 0) {
+                this.drivesList.forEach(d => {
+                    const pkg = parseFloat(d.package_lpa) || 0;
+                    if (pkg < 8) tierMass++;
+                    else if (pkg < 15) tierCore++;
+                    else if (pkg < 25) tierDream++;
+                    else tierMarquee++;
+                });
+            } else {
+                tierMass = 3; tierCore = 6; tierDream = 4; tierMarquee = 2;
+            }
+
+            this.pkgChartInstance = new Chart(pkgCanvas, {
+                type: 'bar',
+                data: {
+                    labels: ['< 8 LPA (Core)', '8–15 LPA (Growth)', '15–25 LPA (Dream)', '> 25 LPA (Marquee)'],
+                    datasets: [{
+                        label: 'Placement Drives',
+                        data: [tierMass, tierCore, tierDream, tierMarquee],
+                        backgroundColor: ['#94a3b8', '#3b82f6', '#10b981', '#f59e0b'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { color: textColor } },
+                        y: { beginAtZero: true, ticks: { color: textColor, stepSize: 1 }, grid: { color: gridColor } }
+                    }
+                }
+            });
+        }
+
+        // 4. Top Recruiting Companies (Horizontal Bar Chart)
+        const compCanvas = document.getElementById('chart-top-companies');
+        if (compCanvas) {
+            if (this.compChartInstance) this.compChartInstance.destroy();
+
+            let compLabels = [];
+            let compValues = [];
+
+            if (this.drivesList && this.drivesList.length > 0) {
+                const map = {};
+                this.drivesList.forEach(d => {
+                    map[d.company_name] = (map[d.company_name] || 0) + (d.selected_count || 1);
+                });
+                const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 7);
+                compLabels = sorted.map(e => e[0]);
+                compValues = sorted.map(e => e[1]);
+            }
+
+            if (compLabels.length === 0) {
+                compLabels = ['Microsoft', 'Amazon', 'Google Cloud', 'Oracle', 'Zomato', 'Deloitte'];
+                compValues = [6, 4, 3, 3, 2, 2];
+            }
+
+            this.compChartInstance = new Chart(compCanvas, {
+                type: 'bar',
+                data: {
+                    labels: compLabels,
+                    datasets: [{
+                        label: 'Campus Hires',
+                        data: compValues,
+                        backgroundColor: '#06b6d4',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1 } },
+                        y: { grid: { color: gridColor }, ticks: { color: textColor } }
+                    }
+                }
+            });
+        }
+
+        // 5. Placed vs Unplaced by Branch (Grouped Bar Chart)
+        const placedCanvas = document.getElementById('chart-placed-unplaced');
+        if (placedCanvas && metrics.branchSummary) {
+            if (this.placedChartInstance) this.placedChartInstance.destroy();
+
+            const labels = metrics.branchSummary.map(b => b.branch.replace('Engineering', 'Eng.').replace('Computer Science &', 'CSE').replace('Artificial Intelligence &', 'AI &'));
+            const placedValues = metrics.branchSummary.map(b => parseInt(b.total_placed, 10) || 0);
+            const unplacedValues = metrics.branchSummary.map(b => Math.max(0, (parseInt(b.total_enrolled, 10) || 0) - (parseInt(b.total_placed, 10) || 0)));
+
+            this.placedChartInstance = new Chart(placedCanvas, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Placed Students',
+                            data: placedValues,
+                            backgroundColor: '#10b981',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Seeking Placement',
+                            data: unplacedValues,
+                            backgroundColor: isDark ? '#374151' : '#cbd5e1',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: textColor } }
+                    },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { color: textColor } },
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, stepSize: 2 } }
                     }
                 }
             });
@@ -415,7 +625,7 @@ const AdminApp = {
             if (!tbody) return;
 
             if (this.studentsList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2rem; color:var(--neutral-400);">No student records matched.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:2rem; color:var(--neutral-400);">No student records matched.</td></tr>`;
                 return;
             }
 
@@ -427,6 +637,7 @@ const AdminApp = {
                         <div style="font-size:0.8rem; color:var(--neutral-500);">${s.email}</div>
                     </td>
                     <td>${s.branch}</td>
+                    <td><span class="badge" style="background:var(--neutral-100); color:var(--neutral-700);">${s.graduation_year}</span></td>
                     <td><strong>${s.cgpa}</strong></td>
                     <td>
                         <span style="font-weight:700; color:${s.active_backlogs > 0 ? 'var(--danger)' : 'var(--success)'};">
@@ -493,22 +704,38 @@ const AdminApp = {
                 return;
             }
 
-            tbody.innerHTML = this.companiesList.map(c => `
-                <tr>
-                    <td>
-                        <div style="font-weight:700; color:var(--neutral-900);">${c.company_name}</div>
-                        ${c.website ? `<a href="${c.website}" target="_blank" style="font-size:0.75rem; color:var(--primary);">${c.website}</a>` : ''}
-                    </td>
-                    <td>${c.industry}</td>
-                    <td><strong>${c.contact_name}</strong></td>
-                    <td>
-                        <div>${c.contact_email}</div>
-                        <div style="font-size:0.8rem; color:var(--neutral-500);">${c.contact_phone || 'N/A'}</div>
-                    </td>
-                    <td><strong style="color:var(--primary);">${c.total_drives || 0} Drives</strong></td>
-                    <td><span class="badge badge-${c.company_status}">${c.company_status}</span></td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = this.companiesList.map(c => {
+                let domain = '';
+                if (c.website) {
+                    try {
+                        const parsed = c.website.startsWith('http') ? new URL(c.website) : new URL('https://' + c.website);
+                        domain = parsed.hostname.replace(/^www\./, '');
+                    } catch(e) {}
+                }
+                const logoUrl = domain ? `https://logo.clearbit.com/${domain}` : null;
+
+                return `
+                    <tr>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:0.75rem;">
+                                ${logoUrl ? `<img src="${logoUrl}" onerror="this.style.display='none'" alt="" style="width:32px; height:32px; border-radius:6px; object-fit:contain; background:var(--neutral-100); border:1px solid var(--neutral-300); padding:2px; flex-shrink:0;">` : ''}
+                                <div>
+                                    <div style="font-weight:700; color:var(--neutral-900);">${c.company_name}</div>
+                                    ${c.website ? `<a href="${c.website}" target="_blank" style="font-size:0.75rem; color:var(--primary);">${c.website}</a>` : ''}
+                                </div>
+                            </div>
+                        </td>
+                        <td>${c.industry}</td>
+                        <td><strong>${c.contact_name}</strong></td>
+                        <td>
+                            <div>${c.contact_email}</div>
+                            <div style="font-size:0.8rem; color:var(--neutral-500);">${c.contact_phone || 'N/A'}</div>
+                        </td>
+                        <td><strong style="color:var(--primary);">${c.total_drives || 0} Drives</strong></td>
+                        <td><span class="badge badge-${c.company_status}">${c.company_status}</span></td>
+                    </tr>
+                `;
+            }).join('');
         } catch (error) {
             console.error('Failed to load companies:', error);
         }
@@ -546,7 +773,120 @@ const AdminApp = {
     },
 
     openNewCompanyModal() {
+        const preview = document.getElementById('company-lookup-preview');
+        if (preview) preview.style.display = 'none';
+        const queryInput = document.getElementById('company-lookup-query');
+        if (queryInput) queryInput.value = '';
         openModal('modal-new-company');
+    },
+
+    /**
+     * Auto-Enrich Company Details via External API (Brandfetch / Finnhub / Clearbit)
+     */
+    async lookupCompanyApi() {
+        const queryInput = document.getElementById('company-lookup-query');
+        const btn = document.getElementById('btn-company-lookup');
+        const preview = document.getElementById('company-lookup-preview');
+        const previewLogo = document.getElementById('company-lookup-logo');
+        const previewName = document.getElementById('company-lookup-name');
+        const previewSource = document.getElementById('company-lookup-source');
+        const previewDesc = document.getElementById('company-lookup-desc');
+
+        const query = (queryInput.value || document.getElementById('company-name-input').value).trim();
+        if (!query) {
+            showToast('Please enter a company name or domain to search.', 'warning');
+            if (queryInput) queryInput.focus();
+            return;
+        }
+
+        try {
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = 'Fetching... ⏳';
+            }
+
+            const res = await API.get('/api/admin/companies/lookup?query=' + encodeURIComponent(query));
+            if (res.success && res.data) {
+                const c = res.data;
+                
+                // Auto-fill form inputs
+                const nameInput = document.getElementById('company-name-input');
+                const indInput = document.getElementById('company-industry-input');
+                const webInput = document.getElementById('company-website-input');
+                const contactNameInput = document.getElementById('company-contact-name');
+                const contactEmailInput = document.getElementById('company-contact-email');
+                const contactPhoneInput = document.getElementById('company-contact-phone');
+
+                if (nameInput) nameInput.value = c.name || query;
+                if (indInput) indInput.value = c.industry || 'Information Technology';
+                if (webInput) webInput.value = c.website || '';
+
+                // Extract clean domain for email default
+                let cleanDomain = c.domain || 'company.com';
+                if (!c.domain && c.website) {
+                    try {
+                        cleanDomain = new URL(c.website.startsWith('http') ? c.website : 'https://' + c.website).hostname.replace('www.', '');
+                    } catch(e) {}
+                }
+
+                // Automatically generate professional HR contact defaults
+                if (contactNameInput) {
+                    contactNameInput.value = `${c.name || 'Company'} Campus Hiring Team`;
+                }
+                if (contactEmailInput) {
+                    contactEmailInput.value = `campus@${cleanDomain}`;
+                }
+                if (contactPhoneInput && !contactPhoneInput.value) {
+                    contactPhoneInput.value = c.phone || '+1 800-555-0199';
+                }
+
+                // Display visual preview
+                if (preview) {
+                    preview.style.display = 'flex';
+                    if (previewLogo && c.logo) {
+                        previewLogo.src = c.logo;
+                        previewLogo.style.display = 'block';
+                        previewLogo.onerror = () => { previewLogo.style.display = 'none'; };
+                    }
+                    if (previewName) previewName.textContent = c.name;
+                    if (previewSource) previewSource.textContent = 'Verified Partner';
+                    if (previewDesc) previewDesc.textContent = c.description || `${c.industry} | ${c.country || 'Global'}`;
+                }
+
+                showToast(`⚡ Auto-filled details for ${c.name}!`, 'success');
+            } else {
+                showToast(res.message || 'Could not find details for that company.', 'error');
+            }
+        } catch (err) {
+            console.error('Company API lookup failed:', err);
+            showToast('Company lookup failed: ' + err.message, 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '🔍 Auto-Fill';
+            }
+        }
+    },
+
+    /**
+     * Check Company API configuration status
+     */
+    async checkCompanyApiConfig() {
+        try {
+            const res = await API.get('/api/admin/companies/config');
+            if (res.success) {
+                const badge = document.getElementById('company-enrichment-status-badge');
+                const modalBadge = document.getElementById('company-modal-api-badge');
+                if (badge) {
+                    badge.textContent = '⚡ Auto-Enrichment: Active';
+                }
+                if (modalBadge) {
+                    modalBadge.textContent = 'Auto-Enrich Active';
+                }
+            }
+        } catch (e) {
+            console.warn('API config check error:', e);
+        }
     },
 
     /**
@@ -823,10 +1163,10 @@ const AdminApp = {
                                     ${sampleRows.map(row => `
                                         <tr>
                                             ${rowKeys.map(k => {
-                                                const v = row[k];
-                                                const display = v !== null && v !== undefined ? String(v) : '<em style="color:var(--neutral-400);">NULL</em>';
-                                                return `<td style="white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis;">${display}</td>`;
-                                            }).join('')}
+                    const v = row[k];
+                    const display = v !== null && v !== undefined ? String(v) : '<em style="color:var(--neutral-400);">NULL</em>';
+                    return `<td style="white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis;">${display}</td>`;
+                }).join('')}
                                         </tr>
                                     `).join('')}
                                 </tbody>

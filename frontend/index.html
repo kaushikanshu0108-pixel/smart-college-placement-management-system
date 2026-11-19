@@ -15,22 +15,24 @@
             <a href="/" class="brand">
                 <div class="brand-icon">🎓</div>
                 <span>SCPMS</span>
-                <span class="brand-badge">B.Tech CSE</span>
+                <span class="brand-badge brand-badge-student">Campus Placement</span>
             </a>
 
-            <div class="nav-menu">
+            <div class="nav-menu" id="home-nav-menu">
                 <a href="#drives" class="nav-link" onclick="document.getElementById('drives').scrollIntoView({behavior:'smooth'});return false;">Active Drives</a>
-                <a href="#features" class="nav-link" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'});return false;">System Features</a>
+                <a href="#features" class="nav-link" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'});return false;">System Architecture</a>
                 <a href="#demo" class="nav-link" onclick="document.getElementById('demo').scrollIntoView({behavior:'smooth'});return false;">Demo Accounts</a>
+                <a href="/support.html" class="nav-link">Support Center</a>
             </div>
 
-            <div class="nav-user" style="display:flex; align-items:center; gap:0.75rem;">
-                <button class="theme-toggle-btn" onclick="ThemeManager.toggle()" title="Toggle Dark/Light Mode">🌙</button>
+            <div class="nav-user">
+                <button class="theme-toggle-btn" onclick="ThemeManager.toggle()" title="Toggle Dark/Light Mode" aria-label="Toggle Theme">🌙</button>
                 <div id="navbar-user-info">
                     <button class="btn btn-primary" onclick="openModal('login-modal')">
                         🔐 Sign In
                     </button>
                 </div>
+                <button class="nav-toggle-btn" onclick="document.getElementById('home-nav-menu').classList.toggle('mobile-open')" aria-label="Toggle mobile navigation">☰</button>
             </div>
         </div>
     </nav>
@@ -227,6 +229,7 @@
             <a href="#drives">Placement Drives</a>
             <a href="#features">Architecture</a>
             <a href="#demo">Demo Credentials</a>
+            <a href="/support.html">Support & Help Desk</a>
         </div>
         <p>© 2026 Department of Computer Science & Engineering — Smart College Placement Management System</p>
     </footer>

@@ -54,6 +54,37 @@ async function runTests() {
     check('Has student count', stats.body.data?.totalStudents >= 10, `${stats.body.data?.totalStudents} students`);
     check('Has active drives', stats.body.data?.activeDrives >= 0, `${stats.body.data?.activeDrives} drives`);
 
+    // 1b. Server Health Check
+    console.log('\n🏥 1b. Health Check Endpoint');
+    const health = await request('GET', '/api/health');
+    check('Status 200 or 503', health.status === 200 || health.status === 503);
+    check('Has status key', typeof health.body?.status === 'string', health.body?.status);
+
+    // 1c. Support Configuration & Anti-Spam
+    console.log('\n💬 1c. Web3Forms Support Endpoint');
+    const supportConfig = await request('GET', '/api/support/config');
+    check('Config Status 200', supportConfig.status === 200);
+    check('Returns isConfigured flag', typeof supportConfig.body?.isConfigured === 'boolean');
+
+    // Honeypot test
+    const spamSubmission = await request('POST', '/api/support/submit', {
+        full_name: 'Spam Bot',
+        email: 'spam@bot.com',
+        subject: 'Buy Now',
+        message: 'Spam content',
+        botcheck: true
+    });
+    check('Spam honeypot rejected (Status 400)', spamSubmission.status === 400);
+
+    // Missing field validation
+    const invalidSubmission = await request('POST', '/api/support/submit', {
+        full_name: '',
+        email: 'invalid-email',
+        subject: '',
+        message: ''
+    });
+    check('Invalid form rejected (Status 400)', invalidSubmission.status === 400);
+
     // 2. Public Drives
     console.log('\n🏢 2. Public Drives API');
     const drives = await request('GET', '/api/public/drives');
@@ -115,8 +146,20 @@ async function runTests() {
     check('Status 200', studentDrives.status === 200);
     check('Returns drives', Array.isArray(studentDrives.body.data));
 
-    // 11. Unauthenticated access blocked
-    console.log('\n🛡️  11. Security - Unauthorized Access');
+    // 11. Company Intelligence & Lookup API
+    console.log('\n🏢 11. Company Intelligence & Auto-Enrichment API');
+    // Login back as admin
+    await request('POST', '/api/auth/login', { email: 'admin@college.edu', password: 'Admin@123456' });
+    const compConfig = await request('GET', '/api/admin/companies/config', null, true);
+    check('Company API config status 200', compConfig.status === 200);
+    check('Company API config structure', compConfig.body.success === true);
+
+    const compLookup = await request('GET', '/api/admin/companies/lookup?query=Adobe', null, true);
+    check('Company lookup status 200', compLookup.status === 200);
+    check('Company lookup returns enriched data', compLookup.body.data && compLookup.body.data.name === 'Adobe');
+
+    // 12. Unauthenticated access blocked
+    console.log('\n🛡️  12. Security - Unauthorized Access');
     cookie = ''; // clear session
     const unauth = await request('GET', '/api/admin/metrics', null, false);
     check('Admin blocked without auth', unauth.status === 401);

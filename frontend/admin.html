@@ -16,22 +16,24 @@
             <a href="/admin.html" class="brand">
                 <div class="brand-icon" style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%);">🛡️</div>
                 <span>SCPMS</span>
-                <span class="brand-badge" style="background:#e0e7ff; color:#3730a3;">Placement Admin</span>
+                <span class="brand-badge brand-badge-admin">Admin Portal</span>
             </a>
 
-            <div class="nav-menu">
-                <a href="/" class="nav-link">Home Portal</a>
+            <div class="nav-menu" id="admin-nav-menu">
+                <a href="/" class="nav-link">Home</a>
                 <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-analytics')">Analytics</a>
                 <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-drives')">Drives</a>
-                <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-applications')">Applications</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-applications')">Pipeline</a>
                 <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-students')">Students</a>
                 <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-companies')">Companies</a>
-                <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-database')">🔍 DB Inspector</a>
+                <a href="javascript:void(0)" class="nav-link" onclick="AdminApp.switchTab('tab-database')">DB Explorer</a>
+                <a href="/support.html" class="nav-link" target="_blank">Support</a>
             </div>
 
-            <div class="nav-user" style="display:flex; align-items:center; gap:0.75rem;">
-                <button class="theme-toggle-btn" onclick="ThemeManager.toggle()" title="Toggle Dark/Light Mode">🌙</button>
-                <div id="navbar-user-info" style="display:flex; align-items:center; gap:0.75rem;"></div>
+            <div class="nav-user">
+                <button class="theme-toggle-btn" onclick="ThemeManager.toggle()" title="Toggle Dark/Light Mode" aria-label="Toggle Theme">🌙</button>
+                <div id="navbar-user-info"></div>
+                <button class="nav-toggle-btn" onclick="document.getElementById('admin-nav-menu').classList.toggle('mobile-open')" aria-label="Toggle mobile navigation">☰</button>
             </div>
         </div>
     </nav>
@@ -45,14 +47,20 @@
                 <h1 class="page-title">University Placement Operations Console</h1>
                 <p class="page-subtitle">Centralized placement coordination, academic eligibility enforcement, and accreditation analytics</p>
             </div>
-            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
-                <button class="btn btn-secondary" onclick="AdminApp.openNewStudentModal()">
+            <div style="display:flex; gap:0.65rem; flex-wrap:wrap; align-items:center;">
+                <button class="btn btn-secondary btn-sm" onclick="AdminApp.refreshAll()" title="Refresh live database data">
+                    🔄 Refresh Data
+                </button>
+                <a href="/support.html" target="_blank" class="btn btn-secondary btn-sm" title="Open student/staff support tickets portal">
+                    💬 Support
+                </a>
+                <button class="btn btn-secondary btn-sm" onclick="AdminApp.openNewStudentModal()">
                     👨‍🎓 + Register Student
                 </button>
-                <button class="btn btn-secondary" onclick="AdminApp.openNewCompanyModal()">
+                <button class="btn btn-secondary btn-sm" onclick="AdminApp.openNewCompanyModal()">
                     🏢 Add Company
                 </button>
-                <button class="btn btn-primary" onclick="AdminApp.openNewDriveModal()">
+                <button class="btn btn-primary btn-sm" onclick="AdminApp.openNewDriveModal()">
                     + New Placement Drive
                 </button>
             </div>
@@ -121,7 +129,46 @@
 
         <!-- TAB 1: ANALYTICS & CSV REPORTS -->
         <section id="tab-analytics" class="tab-content active">
-            <!-- Visual Interactive Charts Grid -->
+            <!-- Extended Real-time Pipeline KPI Grid -->
+            <div class="stats-grid" style="margin-bottom: 1.75rem;">
+                <div class="stat-card">
+                    <div class="stat-icon indigo">📝</div>
+                    <div>
+                        <div class="stat-value" id="kpi-total-apps">--</div>
+                        <div class="stat-label">Total Applications</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon amber">⏳</div>
+                    <div>
+                        <div class="stat-value" id="kpi-shortlisted">--</div>
+                        <div class="stat-label">In Pipeline / Shortlisted</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon rose">💎</div>
+                    <div>
+                        <div class="stat-value" id="kpi-max-pkg">-- LPA</div>
+                        <div class="stat-label">Highest Package</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon cyan">📊</div>
+                    <div>
+                        <div class="stat-value" id="kpi-min-pkg">-- LPA</div>
+                        <div class="stat-label">Minimum Offer</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon emerald">🎓</div>
+                    <div>
+                        <div class="stat-value" id="kpi-avg-cgpa">--</div>
+                        <div class="stat-label">Campus Avg CGPA</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Interactive Charts Grid - Row 1 -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
                 <div class="card">
                     <div class="card-header">
@@ -135,12 +182,58 @@
                 </div>
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">🍩 Application Conversion Pipeline</h3>
+                        <h3 class="card-title">🍩 Application Conversion Funnel</h3>
                     </div>
                     <div class="card-body">
                         <div class="chart-box">
                             <canvas id="chart-app-status"></canvas>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Interactive Charts Grid - Row 2 (Advanced CTC & Recruiter Analytics) -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">💰 CTC Compensation Tier Distribution</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-box">
+                            <canvas id="chart-package-dist"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🏆 Top Recruiters by Campus Hires</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-box">
+                            <canvas id="chart-top-companies"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Interactive Charts Grid - Row 3 (Placed vs Unplaced + Key Metrics Summary) -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">🏛️ Placed vs Unplaced Students by Branch</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-box">
+                            <canvas id="chart-placed-unplaced"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">⚡ Operational Accreditation Summary</h3>
+                    </div>
+                    <div class="card-body" id="analytics-kpi-summary">
+                        <!-- Populated dynamically via admin.js -->
                     </div>
                 </div>
             </div>
@@ -320,6 +413,7 @@
                                     <th>Roll No</th>
                                     <th>Student Name</th>
                                     <th>Branch</th>
+                                    <th>Batch</th>
                                     <th>CGPA</th>
                                     <th>Backlogs</th>
                                     <th>Placement Status</th>
@@ -339,11 +433,21 @@
         <!-- TAB 5: REGISTERED COMPANIES -->
         <section id="tab-companies" class="tab-content">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Recruiting Organizations & Industry Partners</h3>
-                    <button class="btn btn-primary btn-sm" onclick="AdminApp.openNewCompanyModal()">
-                        + Register New Company
-                    </button>
+                <div class="card-header" style="flex-wrap: wrap; gap: 0.75rem;">
+                    <div>
+                        <h3 class="card-title">🏢 Recruiting Organizations & Industry Partners</h3>
+                        <div style="font-size:0.8rem; color:var(--neutral-500); margin-top:2px;">
+                            Auto-enriched with real-time brand logos, verified domains, and corporate intelligence
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                        <span class="badge badge-primary" id="company-enrichment-status-badge">
+                            ⚡ Auto-Enrichment: Active
+                        </span>
+                        <button class="btn btn-primary btn-sm" onclick="AdminApp.openNewCompanyModal()">
+                            + Register New Company
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body" style="padding: 0;">
                     <div class="table-responsive">
@@ -499,13 +603,39 @@
 
     <!-- MODAL 2: REGISTER NEW COMPANY -->
     <div class="modal-overlay" id="modal-new-company">
-        <div class="modal-container">
-            <div class="modal-header">
-                <h3 class="modal-title">Register Recruiting Partner</h3>
+        <div class="modal-container" style="max-height: 88vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="flex-shrink: 0;">
+                <h3 class="modal-title">🏢 Register Recruiting Partner</h3>
                 <button class="modal-close" onclick="closeModal('modal-new-company')">&times;</button>
             </div>
-            <form id="form-new-company" onsubmit="AdminApp.handleCreateCompany(event)">
-                <div class="modal-body">
+            <form id="form-new-company" onsubmit="AdminApp.handleCreateCompany(event)" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;">
+                <div class="modal-body" style="flex: 1; min-height: 0; overflow-y: auto;">
+                    <!-- Auto-Enrichment Section -->
+                    <div style="background:var(--neutral-100); border:1px solid var(--neutral-300); border-radius:var(--radius-sm); padding:0.85rem; margin-bottom:1.25rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+                            <label class="form-label" style="margin:0; font-weight:700; font-size:0.825rem; display:flex; align-items:center; gap:0.35rem;">
+                                <span>⚡ Auto-Fill Company Details</span>
+                            </label>
+                            <span class="badge badge-primary" id="company-modal-api-badge" style="font-size:0.65rem;">Auto-Enrich Active</span>
+                        </div>
+                        <div style="display:flex; gap:0.5rem;">
+                            <input type="text" id="company-lookup-query" class="form-control" placeholder="Search company or domain (e.g. Adobe, Spotify, oracle.com)..." onkeydown="if(event.key==='Enter'){event.preventDefault(); AdminApp.lookupCompanyApi();}">
+                            <button type="button" class="btn btn-primary" id="btn-company-lookup" onclick="AdminApp.lookupCompanyApi()" style="white-space:nowrap; padding:0.4rem 0.85rem; font-size:0.85rem;">
+                                🔍 Auto-Fill
+                            </button>
+                        </div>
+                        <div id="company-lookup-preview" style="display:none; margin-top:0.75rem; padding:0.65rem; background:var(--card-bg); border:1px solid var(--neutral-200); border-radius:var(--radius-sm); align-items:center; gap:0.75rem;">
+                            <img id="company-lookup-logo" src="" alt="" style="width:36px; height:36px; border-radius:6px; object-fit:contain; background:#f8fafc; border:1px solid #e2e8f0; padding:2px;">
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; align-items:center; gap:0.5rem;">
+                                    <strong id="company-lookup-name" style="font-size:0.9rem; color:var(--neutral-900);">Company</strong>
+                                    <span class="badge badge-success" id="company-lookup-source" style="font-size:0.65rem;">Verified</span>
+                                </div>
+                                <div id="company-lookup-desc" style="font-size:0.75rem; color:var(--neutral-500); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Official company profile</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">Company Name *</label>
                         <input type="text" id="company-name-input" class="form-control" placeholder="e.g. Oracle India" required>
@@ -520,12 +650,12 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">HR / Contact Person *</label>
-                            <input type="text" id="company-contact-name" class="form-control" placeholder="e.g. Sunita Rao" required>
+                            <label class="form-label">HR / Contact Person <span style="font-weight: normal; color: var(--neutral-400);">(Auto-filled / Optional)</span></label>
+                            <input type="text" id="company-contact-name" class="form-control" placeholder="e.g. Campus Hiring Team">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">HR Official Email *</label>
-                            <input type="email" id="company-contact-email" class="form-control" placeholder="e.g. campus@oracle.com" required>
+                            <label class="form-label">HR Official Email <span style="font-weight: normal; color: var(--neutral-400);">(Auto-filled / Optional)</span></label>
+                            <input type="email" id="company-contact-email" class="form-control" placeholder="e.g. campus@company.com">
                         </div>
                     </div>
                     <div class="form-group">
@@ -533,9 +663,9 @@
                         <input type="tel" id="company-contact-phone" class="form-control" placeholder="+91 98765 00000">
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer" style="flex-shrink: 0;">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('modal-new-company')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Register Company</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-company">🏢 Register Company</button>
                 </div>
             </form>
         </div>

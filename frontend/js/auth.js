@@ -94,20 +94,20 @@ const Auth = {
         // Render user badge in navbar
         const userContainer = document.getElementById('navbar-user-info');
         if (userContainer) {
-            const roleBadge = user.role === 'admin' 
-                ? '<span class="badge" style="background:#e0e7ff;color:#3730a3;">Placement Admin</span>' 
-                : `<span class="badge" style="background:#dcfce7;color:#166534;">Roll: ${user.rollNo || 'N/A'}</span>`;
+            const roleBadgeClass = user.role === 'admin' ? 'user-badge-admin' : 'user-badge-student';
+            const roleLabel = user.role === 'admin' ? 'Admin' : (user.rollNo ? user.rollNo : 'Student');
 
             userContainer.innerHTML = `
-                <div class="user-pill">
+                <div class="user-pill" title="${user.fullName} (${user.role.toUpperCase()})">
                     <div class="user-avatar">${user.fullName.charAt(0).toUpperCase()}</div>
-                    <div>
-                        <div style="font-weight:700;line-height:1.2;">${user.fullName}</div>
-                        <div>${roleBadge}</div>
+                    <div class="user-meta">
+                        <div class="user-name">${user.fullName}</div>
+                        <div class="user-role"><span class="badge ${roleBadgeClass}">${roleLabel}</span></div>
                     </div>
                 </div>
-                <button class="btn btn-secondary btn-sm" onclick="Auth.logout()">
-                    🚪 Logout
+                <button class="btn btn-secondary btn-sm btn-logout" onclick="Auth.logout()" title="Logout from session">
+                    <span class="logout-icon">🚪</span>
+                    <span class="logout-text">Logout</span>
                 </button>
             `;
         }

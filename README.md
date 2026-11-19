@@ -156,10 +156,21 @@ Access the interactive portals in your web browser:
 - 🌐 **Home & Landing Portal:** [http://localhost:5000](http://localhost:5000)
 - 🎓 **Student Portal:** [http://localhost:5000/student.html](http://localhost:5000/student.html)
 - 🛡️ **Placement Admin Portal:** [http://localhost:5000/admin.html](http://localhost:5000/admin.html)
+- 💬 **Placement Help Desk & Support:** [http://localhost:5000/support.html](http://localhost:5000/support.html)
+- 🔌 **Server & DB Health Endpoint:** [http://localhost:5000/api/health](http://localhost:5000/api/health)
 
 ---
 
-## 7. How to Generate Bcrypt Password Hashes
+## 7. Web3Forms Support Integration Setup
+
+The application integrates with [Web3Forms](https://web3forms.com) to provide a student & recruiter support ticket portal without exposing credentials to the client.
+
+1. Obtain a free access key from [Web3Forms](https://web3forms.com) using your college or admin email.
+2. Open `.env` and configure:
+   ```env
+   WEB3FORMS_ACCESS_KEY=your_actual_access_key_here
+   ```
+3. Support tickets submitted via `/support.html` are validated server-side, checked for spam using honeypot detection, and dispatched securely.
 
 To generate new secure password hashes for testing:
 ```bash
