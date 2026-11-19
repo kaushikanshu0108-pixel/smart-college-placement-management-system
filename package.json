@@ -4,6 +4,7 @@
   "description": "",
   "main": "backend/server.js",
   "scripts": {
+    "build": "echo \"No build step required\"",
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
     "reset:passwords": "node reset-passwords.js",
